@@ -1,0 +1,10 @@
+{
+    "slack": "https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYYYY/ZZZZZZZZZZZZZZZZZZZZZZZZ",
+    "mqtt": {
+        "broker": "your.broker.address",
+        "port": "1883",
+        "device_id": "deviceID",
+        "topic": "your/topic"
+    },
+    "interval": 1000
+}
