@@ -1,4 +1,6 @@
 {
+    "ssid": "wifissid",
+    "password": "wifipass",
     "slack": "https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYYYY/ZZZZZZZZZZZZZZZZZZZZZZZZ",
     "mqtt": {
         "broker": "your.broker.address",
@@ -6,5 +8,5 @@
         "device_id": "deviceID",
         "topic": "your/topic"
     },
-    "interval": 1000
+    "interval_sec": 30
 }

@@ -42,7 +42,7 @@ TFT_eSprite text_area = TFT_eSprite(&M5.Lcd);
 uint16_t co2_ppm = 400;
 float temperature_c = 20.0;
 float humidity_p = 30.0;
-int sampling_interval_s = 1000*20;
+int sampling_interval_s = 30; // seconds
 
 // Slack
 bool use_slack = true;
@@ -109,10 +109,8 @@ void readConfig(const char *filename)
         for (;;);
     }
     strlcpy(password, config["password"], sizeof(password));
-    if (config["interval"]) {
-        sampling_interval_s = (int)config["interval"];
-        Serial.printf("interval: %d\n", sampling_interval_s);
-        Serial.printf("Fix configuration of interval\n");
+    if (config["interval_sec"]) {
+        sampling_interval_s = (int)config["interval_sec"];
     }
     if (config["slack"]) {
         strlcpy(webhook, config["slack"], sizeof(webhook));
@@ -435,5 +433,5 @@ void loop()
     Serial.println(payload); 
     mqttPublish(payload);
 
-    delay(1000*10);
+    delay(1000*sampling_interval_s);
 }

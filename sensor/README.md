@@ -43,6 +43,6 @@ Save "config.json" to SD card
         "device_id": "uniqueDeviceID",
         "topic": "your/topic"
     },
-    "interval": 1000
+    "interval_sec": 30
 }
 ```
