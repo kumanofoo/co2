@@ -4,9 +4,21 @@ version = "0.2.0"
 authors = ["kumanofoo"]
 edition = "2018"
 
+[[bin]]
+name = "co2db"
+path = "src/co2db/bin/main.rs"
+
+[[bin]]
+name = "dbrot"
+path = "src/dbrot/bin/main.rs"
+
 [dependencies]
 chrono = "0.4"
 env_logger = "0.8"
 log = "0.4"
 paho-mqtt = "0.9"
-rusqlite = "0.24.2"
+rusqlite = "0.25.1"
+clap = "2"
+serde={ version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+signal-hook = "0.3.8"

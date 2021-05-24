@@ -7,17 +7,34 @@
 - log(0.4.14)
 - paho-mqtt(0.9.1)
 - rustqlite(0.24.2)
+- clap(2.33.3)
+- serde(1.0.125)
+- serde_json(1.0.64)
+- signal-hook(0.3.8)
 
 ### library
 - libsqlite3-dev(3.31.1-4ubuntu0.2)
 
 ## Configurations
-### Environment variables
+### JSON and Environment variables
+Default configuration file is 'config.json' in current directory.
+Or you can use environment variable 'CO2DB_CONFIG' to specify its path.
+
+
+```Json
+{
+  "broker_uri": "tcp://my.broker.address:1883",
+  "topic": "location/sensor",
+  "database": "measurement.db",
+  "table": "measurement",
+  "client_id": "logger01",
+}
+
+```
+NOTE: 'database' and 'table' are optional.
+
 ```Shell
-export CO2DB_BROKER_URI='tcp://my.broker.address:1883'
-export CO2DB_TOPIC='location/sensor'
-export CO2DB_DATABASE='measurement.db'
-export CO2DB_CLIENT_ID='logger01'
+export CO2DB_CONFIG='path/to/config.json'
 export RUST_LOG=info
 ```
 
@@ -47,7 +64,14 @@ sqlite> select timestamp, topic, payload from measurement;
 ```
 In the example *payload* contains temperature(℃), humidity(%) and CO2(ppm).
 
+## Tests
+```SHELL
+$ cargo test
+$ bats tests
+```
+
 ## References
 - [dyn_subscribe.rs - paho.mqtt.rust](https://github.com/eclipse/paho.mqtt.rust/blob/master/examples/dyn_subscribe.rs "dyn_subscribe.rs - paho.mqtt.rust")
 - [InfluxDB key concepts](https://docs.influxdata.com/influxdb/v1.8/concepts/key_concepts/ "InfluxDB key concepts")
 - [SQLite - Rust Cookbook](https://rust-lang-nursery.github.io/rust-cookbook/database/sqlite.html "SQLite - Rust Cookbook")
+- [Handling Unix Kill Signals in Rust](https://dev.to/talzvon/handling-unix-kill-signals-in-rust-55g6 "Handling Unix Kill Signals in Rust")

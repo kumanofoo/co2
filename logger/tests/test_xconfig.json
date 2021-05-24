@@ -1,0 +1,7 @@
+{
+  "database": "database",
+  "table": "co2measurement",
+  "broker_uri": "broker_uri",
+  "topic": "topic",
+  "client_id": "client_id",
+}
