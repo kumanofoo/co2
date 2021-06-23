@@ -2,6 +2,7 @@
 <img alt="Example" src="./img/example.png" width="800">
 
 ## Requrement
+### Packages
 - matplotlib(3.3.4)
 - numpy(1.20.1)
 - pandas(1.2.3)
@@ -9,15 +10,17 @@
 - pytz(2021.1)
 - slack_bolt(1.6.1)
 
-### For tests
+### Packages for tests
 - freezegun(1.1.0)
 - pytest(6.2.4)
 
-You can install the package in bulk.
+### Library
+- libsqlite3-0(3.31.1-4ubuntu0.2)
+
+You can install the packages in bulk.
 ```Shell
 $ pip install -r requirement.txt
 ```
-
 
 
 ## SQLite3 schema
