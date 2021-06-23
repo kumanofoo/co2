@@ -1,0 +1,8 @@
+freezegun==1.1.0
+matplotlib==3.3.4
+numpy==1.20.1
+pandas==1.2.3
+pytest==6.2.4
+python-dateutil==2.8.1
+pytz==2021.1
+slack-bolt==1.6.1

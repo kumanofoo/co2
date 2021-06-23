@@ -4,8 +4,8 @@ use serde::Deserialize;
 use std::{env, fs, fs::File, io::BufReader, path::Path};
 
 pub const CONFIG_KEY: &str = "CO2DB_CONFIG";
-pub const DEFAULT_CONFIG_FILE: &str = "./config.json";
-pub const DEFAULT_DATABASE: &str = "./measurement.db";
+pub const DEFAULT_CONFIG_FILE: &str = "./co2db.json";
+pub const DEFAULT_DATABASE: &str = "./co2.db";
 pub const DEFAULT_TABLE: &str = "measurement";
 
 #[derive(Deserialize, Debug, Clone)]
