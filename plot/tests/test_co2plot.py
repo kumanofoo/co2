@@ -2,6 +2,7 @@ import pytest
 from co2plot import guess_xsv, extract_plot_data, read_database, plot, co2now, co2plot
 from datetime import date
 import os
+from freezegun import freeze_time
 
 png_path = "results"
 if not os.path.isdir(png_path):
@@ -95,17 +96,13 @@ co2plot_patterns = [
     ((date(2021, 3, 29), None), "tests/test_config5.json", f"{png_path}/test_co2plot_29_None.png"),
 ]
 @pytest.mark.parametrize("days, config, filename", co2plot_patterns)
+@freeze_time("2021-03-29 10:20:57", tz_offset=-9)
 def test_co2plot(days, config, filename):
     from datetime import datetime, timedelta
 
     if os.path.exists(filename):
         os.remove(filename)
 
-    if type(days) == int:
-        d = timedelta(days=days) + (datetime.now() - datetime.fromisoformat("2021-03-29T10:20:57"))
-        co2plot(days=d.days, config=config, filename=filename)
-    else:
-        co2plot(days=days, config=config, filename=filename)
-
+    co2plot(days=days, config=config, filename=filename)
 
     assert os.path.exists(filename)

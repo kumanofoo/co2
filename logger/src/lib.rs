@@ -321,7 +321,7 @@ mod tests {
             timestamp: i64,
             topic: String,
             payload: String,
-        };
+        }
         let result: TestRow = db
             .connection
             .query_row(
