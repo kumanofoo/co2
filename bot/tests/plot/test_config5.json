@@ -1,5 +1,6 @@
 {
-  "database": "tests/test_2_topic.db",
+  "database": "tests/plot/test_long.db",
+  "timezone": "Asia/Tokyo",
   "table": "measurement",
   "axes": [
     {
@@ -19,18 +20,26 @@
       ]
     },
     {
-      "name": "Temperature",
-      "unit": "degree celsius",
+      "name": "Humidity",
+      "unit": "parcentage",
       "max": 100.0,
-      "min": -20.0,
+      "min": 0.0,
       "data": [
         {
           "topic": "living/SCD30",
-          "column": 0
-        },
+          "column": 1  
+        }
+      ]
+    },
+    {
+      "name": "Carbon Dioxide",
+      "unit": "ppm",
+      "max": 3000,
+      "min": 0,
+      "data": [
         {
-          "topic": "living/DS11B20",
-          "column": 0
+          "topic": "living/SCD30",
+          "column": 2  
         }
       ]
     }

@@ -1,0 +1,23 @@
+# Slack
+SLACK_APP_TOKEN=xapp-1-XXXXXXXXXXX-0123456789012-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+SLACK_BOT_TOKEN=xoxb-xxxxxxxxxxx-YYYYYYYYYYYYYYYYYYYYYYYY
+BOOK_CHANNEL=BBBBBBBBB
+REPORT_CHANNEL=RRRRRRRRR
+
+# search book
+CALIL_APPKEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+BOOK_CONFIG=/opt/monibot/etc/monibot.conf
+
+# OpenWeatherMap
+OPENWEATHER_API_KEY=1111222233334444aaaabbbbccccdddd
+# latitude:longitude
+MY_PLACE=xx.xxxxxxx:yyy.yyyyyyy
+
+# monitor
+MONITOR_CONFIG=/opt/monibot/etc/monibot.conf
+
+# plot measurement
+CO2PLOT=/opt/monibot/etc/co2plot.json
+
+#PYTHONDONTWRITEBYTECODE=1
+#MONIBOT_DEBUG=debug

@@ -1,5 +1,6 @@
 {
-  "database": "tests/test_long.db",
+  "database": "tests/plot/test_2_topic.db",
+  "timezone": "Asia/Tokyo",
   "table": "measurement",
   "axes": [
     {

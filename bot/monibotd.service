@@ -1,0 +1,11 @@
+[Unit]
+Description=monibot
+
+[Service]
+ExecStart=/opt/monibot/bin/monibot
+EnvironmentFile=/etc/default/monibot
+Restart=always
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

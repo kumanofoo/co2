@@ -6,18 +6,16 @@ import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from pytz import timezone, utc
 import sqlite3
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, timezone
 plt.switch_backend('Agg')
 
 
 DEFAULT_DATABASE = 'measurement.db'
 DEFAULT_TABLE = 'measurement'
-TIMEZONE = 'asia/tokyo'
 
 
-def read_database(database, table):
+def read_database(database, table, tz='UTC'):
     """
     Read co2 from database and create DataFrame
 
@@ -25,6 +23,10 @@ def read_database(database, table):
     ----------
     database : str
         SQLite3 database filename
+    table : str
+        table name in database
+    tz : str
+        timezone
 
     Returns
     -------
@@ -40,7 +42,7 @@ def read_database(database, table):
     df.timestamp = pd.to_timedelta(df.timestamp, unit='ns') \
         + pd.to_datetime('1970/1/1', utc=True)
     df = df.set_index('timestamp')
-    df.index = df.index.tz_convert(TIMEZONE)
+    df.index = df.index.tz_convert(tz)
 
     return df
 
@@ -87,9 +89,9 @@ def extract_plot_data(df, topic, column):
     ----------
     df : DataFrame
         timestamp as index, topic and payload
-    topic: str
+    topic : str
         topic
-    column: str or int
+    column : str or int
         column in payload
 
     Returns
@@ -105,7 +107,7 @@ def extract_plot_data(df, topic, column):
     return ser
 
 
-def plot(df, axes, filename="co2plot.png"):
+def plot(df, axes, filename="figure.png"):
     """
     Plot time series data and Save to PNG file
 
@@ -146,7 +148,7 @@ def plot(df, axes, filename="co2plot.png"):
         ax.set_ylabel(unit)
         ax.legend()
         ax.xaxis.set_major_formatter(
-            mdates.DateFormatter('%b %d\n%H:%M', timezone(TIMEZONE))
+            mdates.DateFormatter('%b %d\n%H:%M', df.index[0].tzinfo)
         )
         ax.grid()
         ax.tick_params(left=False, bottom=False)
@@ -158,13 +160,14 @@ def plot(df, axes, filename="co2plot.png"):
     plt.savefig(filename)
 
 
-def co2now(config="co2plot.json"):
+def get_latest(config="co2plot.json"):
     """
     Get latest payloads of each topic
 
     Parameters
     ----------
-    None
+    config : str
+        axes configuration
 
     Returns
     -------
@@ -172,18 +175,15 @@ def co2now(config="co2plot.json"):
         including payloads and its metadata from 'co2plot.json'
     """
 
-    f = open(config, 'r')
+    f = open(config, 'r', encoding='utf-8')
     config = json.load(f)
-    database = config.get('database')
-    if not database:
-        database = DEFAULT_DATABASE
+    database = config.get('database', DEFAULT_DATABASE)
     if not os.path.exists(database):
         print("cannot read '%s'" % database)
         exit(0)
-    table = config.get('table')
-    if not table:
-        table = DEFAULT_TABLE
-    df = read_database(database, table)
+    table = config.get('table', DEFAULT_TABLE)
+    tz = config.get('timezone', 'UTC')
+    df = read_database(database, table, tz=tz)
     latest = df.sort_values("timestamp").groupby("topic").tail(1)
 
     measurement = {}
@@ -210,60 +210,66 @@ def co2now(config="co2plot.json"):
     return measurement
 
 
-def co2plot(days=None, config="co2plot.json", filename="plot.png"):
+def figure(days=None, config="co2plot.json", filename="figure.png"):
     """
     Plot time series data and Save to PNG file
 
     Parameters
     ----------
-    days: int or list(begin, end) or None
+    days : int or list(begin, end) or None
         plot from 'days' to now or from begin to end or all
-    config: str
+    config : str
         axes configuration
-    filename: str
+    filename : str
         output PNG filename
+
+    Returns
+    -------
+    values : str
+        plotted filename or None
     """
 
-    f = open(config, 'r')
+    f = open(config, 'r', encoding='utf-8')
     plot_config = json.load(f)
-    database = plot_config.get('database')
-    if not database:
-        database = DEFAULT_DATABASE
+    database = plot_config.get('database', DEFAULT_DATABASE)
     if not os.path.exists(database):
         print("cannot read '%s'" % database)
         exit(0)
-    table = plot_config.get('table')
-    if not table:
-        table = DEFAULT_TABLE
-    df = read_database(database, table)
+    table = plot_config.get('table', DEFAULT_TABLE)
+    tz = plot_config.get('timezone', 'UTC')
+    df = read_database(database, table, tz=tz)
     begin = None
     end = None
     if days:
         if type(days) == int:
-            now = datetime.now(utc)
+            now = datetime.now(timezone.utc)
             begin = now - timedelta(days=days)
         elif type(days) == tuple and len(days) == 2:
             start_of_day = time(0, 0, 0)
             if days[0]:
-                begin = datetime.combine(days[0], start_of_day).astimezone(utc)
+                begin = datetime.combine(days[0], start_of_day).astimezone(
+                    timezone.utc)
             if days[1]:
-                end = datetime.combine(days[1], start_of_day).astimezone(utc)
+                end = datetime.combine(days[1], start_of_day).astimezone(
+                    timezone.utc)
     df = df[begin:end]
-
+    if len(df.index) == 0:
+        return None
     axes = plot_config.get('axes')
     if not axes:
         print("axes not found in config")
         exit(0)
 
     plot(df, axes, filename)
+    return filename
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='CO2 plot from SQLite')
     parser.add_argument(
         '-p',
         '--png',
-        default='co2plot.png',
+        default='figure.png',
         help='Output PNG filename'
     )
     parser.add_argument(
@@ -286,6 +292,10 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
+    if not os.path.exists(args.config):
+        print(f"config file '{args.config}' not found")
+        exit(1)
+
     if args.now:
         abrvs = {
             "degree celsius": "°",
@@ -294,7 +304,7 @@ if __name__ == '__main__':
             "Humidity": ("💧", "%.1f"),
             "Carbon Dioxide": ("💨", "%d"),
         }
-        now = co2now(config=args.config)
+        now = get_latest(config=args.config)
         mes = ""
         for topic in now:
             mes += f"{topic} ({now[topic]['timestamp']})\n"
@@ -309,4 +319,8 @@ if __name__ == '__main__':
                 mes += "\n"
         print(mes, end="")
     else:
-        co2plot(days=args.days, config=args.config, filename=args.png)
+        figure(days=args.days, config=args.config, filename=args.png)
+
+
+if __name__ == '__main__':
+    main()

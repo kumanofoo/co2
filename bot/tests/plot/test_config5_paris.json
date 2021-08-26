@@ -1,39 +1,12 @@
 {
-  "database": "tests/test_2_topic.db",
+  "database": "tests/plot/test_long.db",
+  "timezone": "Europe/Paris",
   "table": "measurement",
   "axes": [
     {
       "name": "Temperature",
       "unit": "degree celsius",
-      "data": [
-        {
-          "topic": "living/SCD30",
-          "column": 0
-        },
-        {
-          "topic": "living/DS11B20",
-          "column": 0
-        }
-      ]
-    },
-    {
-      "name": "Temperature",
-      "unit": "degree celsius",
       "max": 50.0,
-      "data": [
-        {
-          "topic": "living/SCD30",
-          "column": 0
-        },
-        {
-          "topic": "living/DS11B20",
-          "column": 0
-        }
-      ]
-    },
-    {
-      "name": "Temperature",
-      "unit": "degree celsius",
       "min": 0.0,
       "data": [
         {
@@ -43,6 +16,30 @@
         {
           "topic": "living/DS11B20",
           "column": 0
+        }
+      ]
+    },
+    {
+      "name": "Humidity",
+      "unit": "parcentage",
+      "max": 100.0,
+      "min": 0.0,
+      "data": [
+        {
+          "topic": "living/SCD30",
+          "column": 1  
+        }
+      ]
+    },
+    {
+      "name": "Carbon Dioxide",
+      "unit": "ppm",
+      "max": 3000,
+      "min": 0,
+      "data": [
+        {
+          "topic": "living/SCD30",
+          "column": 2  
         }
       ]
     }
