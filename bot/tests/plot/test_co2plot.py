@@ -85,9 +85,7 @@ def test_plot(config, filename):
     plot(df, axes, pngfile)
 
     assert os.path.exists(pngfile)
-    png = open(pngfile, "rb")
-    pnghash = hashlib.sha256(png.read()).hexdigest()
-    png.close()
+    pnghash = png_hash_without_text(pngfile)
     assert pnghash in png_hash[filename]
     os.remove(pngfile)
 
@@ -139,8 +137,24 @@ def test_co2plot(days, config, filename):
     figure(days=days, config=f"{testdir}/{config}", filename=pngfile)
 
     assert os.path.exists(pngfile)
-    png = open(pngfile, "rb")
-    pnghash = hashlib.sha256(png.read()).hexdigest()
-    png.close()
+    pnghash = png_hash_without_text(pngfile)
     assert pnghash in png_hash[filename]
     os.remove(pngfile)
+
+
+def png_hash_without_text(filename):
+    hash_without_text = None
+    with open(filename, 'rb') as f:
+        png_signature = f.read(8)
+        if png_signature != b'\x89\x50\x4E\x47\x0D\x0A\x1A\x0A':
+            return None
+        chunk_type = None
+        while chunk_type != 'IEND':
+            chunk_size = int.from_bytes(f.read(4), byteorder='big')
+            chunk_type = f.read(4).decode('utf-8')
+            chunk = f.read(chunk_size)
+            crc = f.read(4)
+            if chunk_type == 'tEXt':
+                hash_without_text = hashlib.sha256(f.read()).hexdigest()
+                break
+    return hash_without_text

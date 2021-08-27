@@ -70,9 +70,9 @@ initialize_docker() {
 
     # run docker container and install monibot
     if [ -f docker/monibot ]; then
-        docker run -itd --rm --env-file=docker/monibot --name ${docker_container} ${docker_image}
+        docker run -itd --rm -e TZ=Asia/Tokyo --env-file=docker/monibot --name ${docker_container} ${docker_image}
     else
-        docker run -itd --rm --name ${docker_container} ${docker_image}
+        docker run -itd --rm -e TZ=Asia/Tokyo --name ${docker_container} ${docker_image}
     fi
     
     # set signal handler
