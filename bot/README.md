@@ -5,7 +5,7 @@
 Slack platform access tokens and setting up slash commands are required.
 1. Bot token strings begin with 'xoxb-'
 2. App-level token strings begin with 'xapp-'
-3. Three slash commands: '/co2', '/book' and '/weather'
+3. Incoming Webhook URL
 
 ## Installation
 ```Shell
@@ -21,8 +21,7 @@ Set environment variables.
 # Slack
 SLACK_APP_TOKEN=xapp-1-XXXXXXXXXXX-0123456789012-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 SLACK_BOT_TOKEN=xoxb-xxxxxxxxxxx-YYYYYYYYYYYYYYYYYYYYYYYY
-BOOK_CHANNEL=BBBBBBBBB
-REPORT_CHANNEL=RRRRRRRRR
+REPORT_WEBHOOK='https://hooks.slack.com/services/TXXXXXXXX/BYYYYYYYYYY/ZZZZZZZZZZZZZZZZZZZZZZZZZZ'
 
 # search book
 CALIL_APPKEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

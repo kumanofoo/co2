@@ -9,6 +9,8 @@ import time
 import tempfile
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
+from slack_sdk.errors import SlackApiError
+from slack_sdk import WebhookClient
 from co2 import co2plot, dateparser
 from monibot.book import BookStatus, BookStatusError
 from monibot.command import Command
@@ -39,13 +41,25 @@ else:
 if not os.environ.get("SLACK_APP_TOKEN"):
     log.critical("environment value 'SLACK_APP_TOTKEN' is not difined")
     exit(1)
+
+my_user_id = None
+try:
+    result = app.client.auth_test()
+    if result["ok"]:
+        my_user_id = result["user_id"]
+except SlackApiError as e:
+    log.critical(f"I don't know who I am: {e}")
+    exit(1)
+
 handler = SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"])
 
-# report channel
-REPORT_CHANNEL = os.environ.get("REPORT_CHANNEL")
-if not REPORT_CHANNEL:
-    log.critical("Environment value 'REPORT_CHANNEL' is not defined")
+# incoming webhook for reports
+REPORT_WEBHOOK = os.environ.get("REPORT_WEBHOOK")
+if not REPORT_WEBHOOK:
+    log.critical("Environment value 'REPORT_WEBHOOK' is not defined")
     exit(1)
+else:
+    webhook = WebhookClient(REPORT_WEBHOOK)
 
 # co2plot figure directory
 tmpdir = tempfile.TemporaryDirectory()
@@ -121,59 +135,130 @@ def co2_command(param):
     log.debug("finish co2 thread")
 
 
-@app.command("/book")
-def say_about_book(ack, say, command):
-    if not book:
-        ack("Sorry, the command is out of service.")
-        return
-    ack()
-
+def book_event(param):
     @thread
     def run_search_book(param):
-        res = book.search(param.command)
-        param.message = res[1]
-        param.respond()
-
-    param = Command(channel=command["channel_id"])
-    param.command = command["text"]
-    say(f"'{param.command}'...")
-    run_search_book(param)
-
-
-@app.command("/co2")
-def say_about_co2(ack, say, command):
-    if not CO2PLOT:
-        ack("Sorry, the command is out of service.")
-        return
-    ack()
-    param = Command(channel=command["channel_id"])
-    param.command = command["text"]
-    say("now searching...")
-    co2_command(param)
-
-
-@app.command("/weather")
-def say_about_weather(ack, say, command):
-    if not forecast:
-        ack("Sorry, the command is out of service.")
-        return
-    ack()
-
-    @thread
-    def fetch_summary(param):
-        text = forecast.fetch_summary()
+        result_, text = book.search(param.command)
         param.message = text
         param.respond()
 
-    param = Command(channel=command["channel_id"])
-    param.command = "weather"
-    say("weather...")
-    fetch_summary(param)
+    if not book:
+        param.message = "Sorry, the book command is out of service."
+        param.respond()
+    else:
+        run_search_book(param)
+
+
+def air_event(param):
+    if not CO2PLOT:
+        param.message = "Sorry, the command is out of service."
+        param.respond()
+    else:
+        co2_command(param)
+
+
+def weather_event(param):
+    @thread
+    def fetch_summary(param):
+        param.message = forecast.fetch_summary()
+        param.respond()
+
+    if not forecast:
+        param.message = "Sorry, the weather command is out of service."
+        param.respond()
+    else:
+        fetch_summary(param)
+
+
+commands = {
+    "book": book_event,
+    "air": air_event,
+    "weather": weather_event,
+}
 
 
 @app.event("message")
-def handle_message_events(body, logger):
-    log.info(body)
+def handle_message_events(say, message, client):
+    text = message.get("text")
+    if text is None:
+        return
+    words = text.split()
+    cmd = [c for c in commands.keys() if c.startswith(words[0])]
+    if len(cmd) != 1:
+        say("🤔")
+        return
+
+    param = Command(channel=message["channel"])
+    param.command = text[len(words[0]):].strip()
+    commands[cmd[0]](param)
+    return
+
+
+@app.event("app_home_opened")
+def home_opened(client, event):
+    view = {
+        "type": "home",
+        "blocks": [],
+    }
+    view["blocks"].append({
+        "type": "section",
+        "text": {
+                "type": "mrkdwn",
+                "text": "*Welcome :house:, <@" + event["user"] + ">*",
+        }
+    })
+    fields = []
+    now = co2plot.get_latest(config=CO2PLOT)
+    if now:
+        abrvs = {
+            "degree celsius": "°",
+            "parcentage": "%",
+            "Temperature": ("🌡", "%.1f"),
+            "Humidity": ("💧", "%.1f"),
+            "Carbon Dioxide": ("💨", "%d"),
+        }
+        air_quality = ""
+        for topic in now:
+            air_quality += f"{topic} ({now[topic]['timestamp']})\n"
+            for n in now[topic]["metadata"]:
+                meta = now[topic]["metadata"][n]
+                (name, fmt) = abrvs.get(meta['name'], (meta['name'], "%f"))
+                unit = abrvs.get(meta['unit'], meta['unit'])
+                val = now[topic]["payload"][n]
+                air_quality += "%s " % name
+                air_quality += fmt % val
+                air_quality += "%s" % unit
+                air_quality += " "
+        fields.append({
+            "type": "mrkdwn",
+            "text": air_quality,
+        })
+    if forecast:
+        summary = forecast.fetch_summary()
+        fields.append({
+            "type": "mrkdwn",
+            "text": summary,
+        })
+    if fields:
+        view["blocks"].append({
+            "type": "section",
+            "fields": fields
+        })
+    else:
+        view["blocks"].append({
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "No Air Information",
+            }
+        })
+    try:
+        client.views_publish(
+            user_id=event["user"],
+            view=view
+        )
+    except Exception as e:
+        log.error(f"Error publishing home tab: {e}")
 
 
 q = queue.Queue()
@@ -196,14 +281,10 @@ except BookStatusError as e:
 
 try:
     forecast = OutsideTemperature()
-    cmd = Command(
-        command="forcast",
-        channel=REPORT_CHANNEL
-    )
     c = Cron(
         forecast.check_temperature,
         interval_sec=forecast.interval_hours*60*60,
-        command=cmd
+        webhook=webhook
     )
     crons.append(c)
 except MonitorError as e:
@@ -222,9 +303,7 @@ def main():
         while not finish_monibot:
             mes = q.get()
             log.debug(f'dequeue message: {mes}')
-            param = Command(channel=REPORT_CHANNEL)
-            param.message = mes
-            param.respond()
+            webhook.send(text=mes)
     finally:
         handler.close()
         for c in crons:

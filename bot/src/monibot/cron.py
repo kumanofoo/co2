@@ -16,7 +16,8 @@ class Cron(threading.Thread):
         kwargs={},
         interval_sec=1,
         queue=None,
-        command=None
+        command=None,
+        webhook=None
     ):
         self.func = func
         self.args = args
@@ -24,6 +25,7 @@ class Cron(threading.Thread):
         self.interval = interval_sec
         self.queue = queue
         self.command = command
+        self.webhook = webhook
         self.event = threading.Event()
         super(Cron, self).__init__()
 
@@ -38,6 +40,8 @@ class Cron(threading.Thread):
             if self.command and ret:
                 self.command.message = ret
                 self.command.respond()
+            if self.webhook and ret:
+                self.webhook.send(text=ret)
 
             if self.event.wait(self.interval):
                 break

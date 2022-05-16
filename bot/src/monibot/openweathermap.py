@@ -35,7 +35,7 @@ class Weather:
             2: ":thunder_cloud_and_rain:",
             3: ":umbrella_with_rain_drops:",
             5: ":umbrella_with_rain_drops:",
-            6: ":showman:",
+            6: ":snowman:",
             7: ":foggy:",
             800: ":sunny:",
             801: ":mostly_sunny:",
@@ -123,7 +123,6 @@ class Weather:
             return None
 
         cur = self.weather['current']
-        print(cur)
         wt = cur['weather'][0]
         wid = wt['id']
         if wid in self.EMOJI:
