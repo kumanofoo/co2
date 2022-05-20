@@ -170,26 +170,56 @@ def weather_event(param):
         fetch_summary(param)
 
 
+def help_event(param):
+    cmd = []
+    if CO2PLOT:
+        cmd.append("/air [now|DATE]")
+    if book:
+        cmd.append("/book|TITLE|ISBN-10")
+    if forecast:
+        cmd.append("/weather")
+    cmd.append("help|?")
+
+    param.message = f"Usage: {param.command} [" + '|'.join(cmd) + "]"
+    param.respond()
+
+
 commands = {
     "book": book_event,
     "air": air_event,
     "weather": weather_event,
+    "help": help_event,
 }
 
 
-@app.event("message")
-def handle_message_events(say, message, client):
-    text = message.get("text")
+@app.event("app_mention")
+def reply_mention(say, event, client):
+    text = event.get("text")
     if text is None:
         return
     words = text.split()
-    cmd = [c for c in commands.keys() if c.startswith(words[0])]
-    if len(cmd) != 1:
-        say("🤔")
+    user = words.pop(0)
+    if user != f"<@{my_user_id}>":
         return
-
-    param = Command(channel=message["channel"])
-    param.command = text[len(words[0]):].strip()
+    param = Command(channel=event["channel"])
+    if len(words) == 0:
+        command = '?'
+    else:
+        command = words[0]
+    cmd = ["book"]
+    if command == 'help' or command == '?':
+        cmd = ["help"]
+        param.command = user
+    elif command[0] == '/':
+        cmd = [c for c in commands.keys() if c.startswith(command[1:])]
+        if len(cmd) != 1:
+            say("🤔")
+            return
+        param.command = ' '.join(words[1:])
+        say(f'"{cmd[0]} {param.command}"...')
+    else:
+        param.command = ' '.join(words)
+        say(f'"{param.command}"...')
     commands[cmd[0]](param)
     return
 
