@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import signal
 import queue
 import threading
@@ -173,11 +174,11 @@ def weather_event(param):
 def help_event(param):
     cmd = []
     if CO2PLOT:
-        cmd.append("/air [now|DATE]")
+        cmd.append("air [now|DATE]")
     if book:
-        cmd.append("/book|TITLE|ISBN-10")
+        cmd.append("book|TITLE|ISBN-10")
     if forecast:
-        cmd.append("/weather")
+        cmd.append("weather")
     cmd.append("help|?")
 
     param.message = f"Usage: {param.command} [" + '|'.join(cmd) + "]"
@@ -189,7 +190,46 @@ commands = {
     "air": air_event,
     "weather": weather_event,
     "help": help_event,
+    "?": help_event,
 }
+
+
+def parse_command(text):
+    text = text.strip()
+    result = re.match(r"\s*((\S*)\s*(.*))", text)
+    if result is None:
+        return ("help", "")
+    title, command, arg = result.groups()
+    if command == "":
+        return ("help", "")
+    cmd = [c for c in commands.keys() if c.startswith(command)]
+    if len(cmd) != 1:
+        return ("book", title)
+    return (cmd[0], arg)
+
+
+@app.event("message")
+def reply_direct_message(say, event, client):
+    if event['channel_type'] != 'im':
+        return
+    text = event.get("text")
+    if text is None:
+        return
+    cmd, arg = parse_command(text)
+    if cmd == "book":
+        say(f'"{arg}"...')
+    param = Command(channel=event["channel"])
+    param.command = arg
+    commands[cmd](param)
+    return
+
+
+def get_user_id(text):
+    text = text.strip()
+    result = re.match(r"^<@(\w+?)>\s*(.*)", text)
+    if result:
+        return result.groups()
+    return None
 
 
 @app.event("app_mention")
@@ -197,30 +237,15 @@ def reply_mention(say, event, client):
     text = event.get("text")
     if text is None:
         return
-    words = text.split()
-    user = words.pop(0)
-    if user != f"<@{my_user_id}>":
+    user_id, command = get_user_id(text)
+    if user_id != my_user_id:
         return
+    cmd, arg = parse_command(command)
+    if cmd == "book":
+        say(f'"{arg}"...')
     param = Command(channel=event["channel"])
-    if len(words) == 0:
-        command = '?'
-    else:
-        command = words[0]
-    cmd = ["book"]
-    if command == 'help' or command == '?':
-        cmd = ["help"]
-        param.command = user
-    elif command[0] == '/':
-        cmd = [c for c in commands.keys() if c.startswith(command[1:])]
-        if len(cmd) != 1:
-            say("🤔")
-            return
-        param.command = ' '.join(words[1:])
-        say(f'"{cmd[0]} {param.command}"...')
-    else:
-        param.command = ' '.join(words)
-        say(f'"{param.command}"...')
-    commands[cmd[0]](param)
+    param.command = arg
+    commands[cmd](param)
     return
 
 
