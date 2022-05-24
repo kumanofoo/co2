@@ -13,10 +13,12 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.errors import SlackApiError
 from slack_sdk import WebhookClient
 from co2 import co2plot, dateparser
+import monibot
 from monibot.book import BookStatus, BookStatusError
 from monibot.command import Command
 from monibot.cron import Cron
 from monibot.monitor import OutsideTemperature, MonitorError
+from monibot.getip import GetIP, GetIPError
 
 
 # global logging settings
@@ -171,12 +173,29 @@ def weather_event(param):
         fetch_summary(param)
 
 
+def ip_event(param):
+    @thread
+    def fetch_ip(param):
+        param.message = ip.get()
+        if param.message is None:
+            param.message = "Failed to fetch IP address."
+        param.respond()
+
+    if not ip:
+        param.message = "Sorry, the ip command is out of service."
+        param.respond()
+    else:
+        fetch_ip(param)
+
+
 def help_event(param):
     cmd = []
     if CO2PLOT:
         cmd.append("air [now|DATE]")
     if book:
         cmd.append("book|TITLE|ISBN-10")
+    if ip:
+        cmd.append("ip")
     if forecast:
         cmd.append("weather")
     cmd.append("help|?")
@@ -186,8 +205,9 @@ def help_event(param):
 
 
 commands = {
-    "book": book_event,
     "air": air_event,
+    "book": book_event,
+    "ip": ip_event,
     "weather": weather_event,
     "help": help_event,
     "?": help_event,
@@ -307,6 +327,22 @@ def home_opened(client, event):
                 "text": "No Air Information",
             }
         })
+    view["blocks"].append({
+        "type": "divider"
+    })
+    footer = ""
+    if ip:
+        ip_address = ip.get()
+        if ip_address:
+            footer = f"IP Adderss: {ip_address}\n"
+    footer += f"Version: {monibot.__version__}"
+    view["blocks"].append({
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": footer
+        }
+    })
     try:
         client.views_publish(
             user_id=event["user"],
@@ -346,6 +382,13 @@ except MonitorError as e:
     log.warning(f"Weather forecast: {e}")
     log.info("Disable outside temperature message")
     forecast = None
+
+try:
+    ip = GetIP()
+except GetIPError as e:
+    log.warning(f"Get IP: {e}")
+    log.info("Disable ip")
+    ip = None
 
 
 def main():

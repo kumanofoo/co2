@@ -38,6 +38,9 @@ MONITOR_CONFIG=/opt/monibot/monibot.conf
 # plot measurement data
 CO2PLOT=co2plot.json
 
+# fetch IP address
+GETIP_CONFIG=/opt/monibot/etc/monibot.conf
+
 #TZ=Asia/Tokyo
 #PYTHONDONTWRITEBYTECODE=1
 #MONIBOT_DEBUG=debug
@@ -56,6 +59,12 @@ monibot.conf
     "outside_hot_alert_threshold": 30.0,
     "pipe_alert_threshold": -5.0,
     "forecast_interval_hours": 4
+  },
+  "getip": {
+    "urls":  [
+      "https://api.ipify.org",
+      "https://v4.ident.me"
+    ]
   }
 }
 ```

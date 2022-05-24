@@ -18,5 +18,8 @@ MONITOR_CONFIG=/opt/monibot/etc/monibot.conf
 # plot measurement
 CO2PLOT=/opt/monibot/etc/co2plot.json
 
+# fetch IP address
+GETIP_CONFIG=/opt/monibot/etc/monibot.conf
+
 #PYTHONDONTWRITEBYTECODE=1
 #MONIBOT_DEBUG=debug
