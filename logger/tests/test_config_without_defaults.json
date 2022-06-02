@@ -1,5 +1,5 @@
 {
   "broker_uri": "broker_uri",
-  "topic": "topic",
+  "topics": ["topic1", "topic2"],
   "client_id": "client_id"
 }
