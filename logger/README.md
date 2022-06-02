@@ -24,14 +24,16 @@ Or you can use environment variable 'CO2DB_CONFIG' to specify its path.
 ```Json
 {
   "broker_uri": "tcp://my.broker.address:1883",
-  "topic": "location/sensor",
+  "topics": ["location1/sensor", "location2/sensor"],
+  "qos": [1, 2],
   "database": "co2.db",
   "table": "measurement",
-  "client_id": "logger01",
+  "client_id": "logger01"
 }
 
 ```
-NOTE: 'database' and 'table' are optional.
+NOTE: 'database', 'table' and 'qos' are optional. 'qos' list match 'topics'.
+Default value of 'qos' is 1.
 
 ```Shell
 export CO2DB_CONFIG='path/to/co2db.json'
