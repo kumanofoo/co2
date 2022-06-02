@@ -304,6 +304,7 @@ def home_opened(client, event):
                 air_quality += fmt % val
                 air_quality += "%s" % unit
                 air_quality += " "
+            air_quality += "\n"
         fields.append({
             "type": "mrkdwn",
             "text": air_quality,
