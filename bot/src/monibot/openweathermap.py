@@ -132,7 +132,9 @@ class Weather:
         if id not in self.EMOJI:
             id = 'x'
 
-        wd = int(cur["wind_deg"] // (360/16))
+        wd_degree = 360.0/16
+        offset = wd_degree/2.0
+        wd = int((cur["wind_deg"] + offset)/wd_degree) % 16
         summary = f'*{self.EMOJI[id]} {cur["temp"]}°C*\n' \
             f'*Feels like {cur["feels_like"]}°C. {wt["main"]}.*\n' \
             f'{self.DIR2ARROW[self.WIND_DIR[wd]]} {cur["wind_speed"]}m/s ' \
