@@ -1,0 +1,11 @@
+[Unit]
+Description=DS18B20 Publisher
+
+[Service]
+WorkingDirectory=/opt/ds18b20_pub
+ExecStart=/opt/ds18b20_pub/ds18b20
+Restart=always
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

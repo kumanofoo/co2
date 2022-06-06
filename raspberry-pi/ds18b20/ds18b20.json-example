@@ -1,0 +1,6 @@
+{
+  "broker_uri": "tcp://my.broker.address:1883",
+  "topic": "location1/sensor",
+  "client_id": "logger02",
+  "interval_secs": 60
+}
