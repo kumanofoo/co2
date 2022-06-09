@@ -1,6 +1,6 @@
 #! /bin/bash
 
-set -e
+set -ue
 
 
 co2user=co2
@@ -36,7 +36,7 @@ install_co2() {
 uninstall_co2() {
     systemctl stop co2db
     systemctl disable co2db
-    rm -f /tmp/etc/systemd/system/${unitfile}
+    rm -f /etc/systemd/system/${unitfile}
     rm -f ${co2dir}/${unitfile}
 
     (
