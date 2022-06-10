@@ -9,7 +9,7 @@ config_ex=ds18b20.json-example
 unitfile=ds18b20_pub.service
 
 prefix=/opt
-install_dir=${prefix}/ds18b20
+install_dir=${prefix}/ds18b20_pub
 
 user_id=ds18b20
 
@@ -32,6 +32,16 @@ install_ds18b20() {
     install -v -m 644 -t ${install_dir} ${config_ex} ${unitfile}
     chown -R ${user_id}:${user_id} ${install_dir}
     ln -f -s ${install_dir}/${unitfile} /etc/systemd/system
+    echo ""
+    echo "Start ds18b20_pub service."
+    echo "$ sudo systemctl start ds18b20"
+    echo ""
+    echo "Check ds18b20_pub service."
+    echo "$ systemctl status ds18b20"
+    echo ""
+    echo "Enable to start ds18b20_pub service on system boot."
+    echo "$ sudo systemctl enable ds18b20_pub"
+    echo ""
 }
 
 uninstall_ds18b20() {
