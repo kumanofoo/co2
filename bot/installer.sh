@@ -2,7 +2,10 @@
 
 set -e
 
-monibotd_dir="/opt/monibot"
+user_id=monibot
+co2group=co2
+prefix=/opt
+monibotd_dir="${prefix}/monibot"
 etc_dir="${monibotd_dir}/etc"
 
 docker_image="monibot:test"
@@ -13,9 +16,9 @@ install_monibot() {
     source ${monibotd_dir}/bin/activate
     pip install wheel
     pip install .[dev]
-    install -o root -g root -m 755 -D -d ${etc_dir}
-    install -o root -g root -m 644 monibot-sample.conf ${etc_dir}
-    install -o root -g root -m 644 co2plot-sample.json ${etc_dir}
+    install -m 755 -D -d ${etc_dir}
+    install -m 644 monibot-sample.conf ${etc_dir}
+    install -m 644 co2plot-sample.json ${etc_dir}
 
     if [ -f /etc/default/monibot ]; then
         echo skip install /etc/default/monibot
@@ -31,6 +34,12 @@ install_monibot() {
                 /etc/systemd/system
     fi
 
+    if id ${user_id} &>/dev/null; then
+        echo ${user_id} user already exists.
+    else
+        useradd -d ${monibotd_dir} -s /usr/sbin/nologin -r ${user_id} || exit $?
+    fi
+    gpasswd -a ${user_id} ${co2group} &>/dev/null
 
     cat <<EOF
 
@@ -47,6 +56,11 @@ EOF
 }
 
 uninstall_monibot() {
+    if ! [ -d ${monibotd_dir} ]; then
+        echo "${monibotd_dir} does not exist."
+        exit 0
+    fi
+
     read -p "Are you sure (yes/NO)? " reply
     case "${reply}" in
         yes)
@@ -62,6 +76,9 @@ uninstall_monibot() {
     rm /etc/systemd/system/monibotd.service
     rm /etc/default/monibot
     rm -r ${monibotd_dir}
+
+    gpasswd -d ${user_id} ${co2group} &>/dev/null
+    userdel ${user_id} &>/dev/null
 }
 
 initialize_docker() {
