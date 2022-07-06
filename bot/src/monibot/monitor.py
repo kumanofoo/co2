@@ -82,11 +82,12 @@ class OutsideTemperature():
         self.wt.fetch()
         low, low_t = self.wt.lowest()
         high, high_t = self.wt.highest()
-        low_t_str = low_t.strftime(self.datetime_format)
-        high_t_str = high_t.strftime(self.datetime_format)
-
-        mes = "A low of %.1f%s %s\n" % (low, self.degree, low_t_str)
-        mes += "A high of %.1f%s %s" % (high, self.degree, high_t_str)
+        mes = None
+        if low and low_t and high and high_t:
+            low_t_str = low_t.strftime(self.datetime_format)
+            high_t_str = high_t.strftime(self.datetime_format)
+            mes = "A low of %.1f%s %s\n" % (low, self.degree, low_t_str)
+            mes += "A high of %.1f%s %s" % (high, self.degree, high_t_str)
 
         return mes
 
@@ -99,31 +100,32 @@ class OutsideTemperature():
         self.wt.fetch()
         low, low_t = self.wt.lowest()
         high, high_t = self.wt.highest()
-        low_t_str = low_t.strftime(self.datetime_format)
-        high_t_str = high_t.strftime(self.datetime_format)
-        log.debug("low=%d, low_t=%s" % (low, low_t_str))
-        log.debug("high=%d, high_t=%s" % (high, high_t_str))
         mes = ""
-        if low_t > now and low <= min:
-            if mes != "":
-                mes += "\n"
-            mes += "keep your pipes!!\n"
-            mes += "A low of %.1f%s %s" % (low, self.degree, low_t_str)
-        if high_t > now and high < 0:
-            if mes != "":
-                mes += "\n"
-            mes += "It will be too cold!!\n"
-            mes += "A high of %.1f%s %s" % (high, self.degree, high_t_str)
-        if high_t > now and high > max:
-            if mes != "":
-                mes += "\n"
-            mes += "It will be too hot!!\n"
-            mes += "A high of %.1f%s %s" % (high, self.degree, high_t_str)
-        if low_t > now and low > max:
-            if mes != "":
-                mes += "\n"
-            mes += "You become butter...\n"
-            mes += "A low of %.1f%s %s" % (low, self.degree, low_t_str)
+        if low and low_t and high and high_t:
+            low_t_str = low_t.strftime(self.datetime_format)
+            high_t_str = high_t.strftime(self.datetime_format)
+            log.debug("low=%d, low_t=%s" % (low, low_t_str))
+            log.debug("high=%d, high_t=%s" % (high, high_t_str))
+            if low_t > now and low <= min:
+                if mes != "":
+                    mes += "\n"
+                mes += "keep your pipes!!\n"
+                mes += "A low of %.1f%s %s" % (low, self.degree, low_t_str)
+            if high_t > now and high < 0:
+                if mes != "":
+                    mes += "\n"
+                mes += "It will be too cold!!\n"
+                mes += "A high of %.1f%s %s" % (high, self.degree, high_t_str)
+            if high_t > now and high > max:
+                if mes != "":
+                    mes += "\n"
+                mes += "It will be too hot!!\n"
+                mes += "A high of %.1f%s %s" % (high, self.degree, high_t_str)
+            if low_t > now and low > max:
+                if mes != "":
+                    mes += "\n"
+                mes += "You become butter...\n"
+                mes += "A low of %.1f%s %s" % (low, self.degree, low_t_str)
 
         log.debug("message: %s" % (mes))
         return mes

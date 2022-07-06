@@ -163,7 +163,13 @@ def air_event(param):
 def weather_event(param):
     @thread
     def fetch_summary(param):
-        param.message = forecast.fetch_summary()
+        summary = forecast.fetch_summary()
+        if summary:
+            param.message = summary
+        else:
+            param.message = (
+                "Sorry, weather forecast is temporarily unavailable."
+            )
         param.respond()
 
     if not forecast:
@@ -311,6 +317,10 @@ def home_opened(client, event):
         })
     if forecast:
         summary = forecast.fetch_summary()
+        if summary is None:
+            summary = (
+                "Sorry, weather forecast is temporarily unavailable."
+            )
         fields.append({
             "type": "mrkdwn",
             "text": summary,
