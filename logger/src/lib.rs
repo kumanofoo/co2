@@ -4,16 +4,18 @@ use serde::Deserialize;
 use std::{env, fs, fs::File, io::BufReader, path::Path};
 
 pub const CONFIG_KEY: &str = "CO2DB_CONFIG";
-pub const DEFAULT_CONFIG_FILE: &str = "./config.json";
-pub const DEFAULT_DATABASE: &str = "./measurement.db";
+pub const DEFAULT_CONFIG_FILE: &str = "./co2db.json";
+pub const DEFAULT_DATABASE: &str = "./co2.db";
 pub const DEFAULT_TABLE: &str = "measurement";
+pub const DEFAULT_QOS: i32 = 1;
 
 #[derive(Deserialize, Debug, Clone)]
 struct _Config {
     database: Option<String>,
     table: Option<String>,
     broker_uri: String,
-    topic: String,
+    topics: Vec<String>,
+    qos: Option<Vec<i32>>,
     client_id: String,
 }
 
@@ -22,7 +24,8 @@ pub struct Config {
     pub database: String,
     pub table: String,
     pub broker_uri: String,
-    pub topic: String,
+    pub topics: Vec<String>,
+    pub qos: Vec<i32>,
     pub client_id: String,
 }
 
@@ -37,14 +40,25 @@ impl Config {
             Ok(config) => config,
             Err(why) => return Err(why.to_string()),
         };
+        let topic_n = _config.topics.len();
+        let qos = match _config.qos {
+            Some(qos) => {
+                if qos.len() != topic_n {
+                    return Err("The QoS list must match topics".to_string());
+                }
+                qos
+            }
+            None => vec![DEFAULT_QOS; topic_n],
+        };
 
         // set default if need
         Ok(Config {
             broker_uri: _config.broker_uri,
-            topic: _config.topic,
+            topics: _config.topics,
             client_id: _config.client_id,
             database: _config.database.unwrap_or(DEFAULT_DATABASE.to_string()),
             table: _config.table.unwrap_or(DEFAULT_TABLE.to_string()),
+            qos: qos,
         })
     }
 
@@ -212,7 +226,8 @@ mod tests {
         assert_eq!(config.client_id, "client_id");
         assert_eq!(config.database, "database");
         assert_eq!(config.table, "co2measurement");
-        assert_eq!(config.topic, "topic");
+        assert_eq!(config.topics, ["topic1", "topic2"]);
+        assert_eq!(config.qos, [1, 2]);
     }
 
     #[test]
@@ -236,7 +251,8 @@ mod tests {
         assert_eq!(config.client_id, "client_id");
         assert_eq!(config.database, "database");
         assert_eq!(config.table, "co2measurement");
-        assert_eq!(config.topic, "topic");
+        assert_eq!(config.topics, ["topic1", "topic2"]);
+        assert_eq!(config.qos, [1, 2]);
     }
 
     #[test]
@@ -254,7 +270,8 @@ mod tests {
         assert_eq!(config.client_id, "client_id");
         assert_eq!(config.database, DEFAULT_DATABASE);
         assert_eq!(config.table, DEFAULT_TABLE);
-        assert_eq!(config.topic, "topic");
+        assert_eq!(config.topics, ["topic1", "topic2"]);
+        assert_eq!(config.qos, [1, 1]);
     }
 
     #[test]
@@ -265,7 +282,7 @@ mod tests {
         assert_eq!(config.client_id, "client_id");
         assert_eq!(config.database, "database");
         assert_eq!(config.table, "co2measurement");
-        assert_eq!(config.topic, "topic");
+        assert_eq!(config.topics, ["topic"]);
     }
 
     const TEST_NEW_DATABASE: &str = "tests/test_new.db";
@@ -321,7 +338,7 @@ mod tests {
             timestamp: i64,
             topic: String,
             payload: String,
-        };
+        }
         let result: TestRow = db
             .connection
             .query_row(

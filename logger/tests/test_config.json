@@ -2,6 +2,7 @@
   "database": "database",
   "table": "co2measurement",
   "broker_uri": "broker_uri",
-  "topic": "topic",
+  "topics": ["topic1", "topic2"],
+  "qos": [1, 2],
   "client_id": "client_id"
 }

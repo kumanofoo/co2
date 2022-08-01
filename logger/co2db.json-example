@@ -1,0 +1,8 @@
+{
+  "broker_uri": "tcp://my.broker.address:1883",
+  "topics": ["location1/sensor", "location2/sensor"],
+  "qos": [1, 2],
+  "database": "/opt/co2/co2.db",
+  "table": "measurement",
+  "client_id": "logger01"
+}

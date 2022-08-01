@@ -1,0 +1,13 @@
+[Unit]
+Description=Room Monitoring Slack Bot
+
+[Service]
+ExecStart=/opt/monibot/bin/monibot
+EnvironmentFile=/etc/default/monibot
+Restart=always
+Type=simple
+User=monibot
+Group=monibot
+
+[Install]
+WantedBy=multi-user.target
