@@ -5,8 +5,9 @@ import re
 import os
 import json
 import random
-import bs4
+from typing import Dict
 import requests
+from requests_html import HTMLSession
 
 import logging
 log = logging.getLogger(__name__)
@@ -25,8 +26,6 @@ class BookStatus:
     check book's status in libraries
     """
     def __init__(self):
-        self.abort = False
-
         self.CALIL_APPKEY = os.environ.get("CALIL_APPKEY")
         if not self.CALIL_APPKEY:
             raise BookStatusError("no 'CALIL_APPKEY' in environment variables")
@@ -59,16 +58,28 @@ class BookStatus:
                                   % self.BOOK_CONFIG)
         log.debug('libraries: %s' % self.libraries)
 
-    def get_isbn_c(self, book, max_count=5):
+    def normalize_isbn(self, text: str) -> str:
+        text_no_hyphen = text.strip().replace('-', '')
+        isbn10 = re.compile(r"^\d{9}[0-9X]$")
+        isbn13 = re.compile(r"^\d{13}$")
+
+        if isbn10.match(text_no_hyphen):
+            return text_no_hyphen
+        if isbn13.match(text_no_hyphen):
+            return text_no_hyphen
+
+        return ""
+
+    def get_isbn_c(self, book: str, max_count: int = 5) -> Dict[str, str]:
         log.debug('get_isbn_c(%s, %d)' % (book, max_count))
-        url = 'https://api.calil.jp/openurl'
+        url = 'https://calil.jp/search'
         params = {
-            'title': book
+            'q': book
         }
         isbns = {}
-        book_link = []
+        session = HTMLSession()
         try:
-            res = requests.get(url, params=params)
+            res = session.get(url, params=params)
         except Exception as e:
             log.warning(e)
             return None
@@ -77,65 +88,42 @@ class BookStatus:
                 log.warning('%s return %d' % (url, res.status_code))
                 return None
 
-        soup = bs4.BeautifulSoup(res.text, features='html.parser')
-        title = soup.find_all('div', class_='title')
+        title = res.html.find('a.title')
         book_han = book.translate(ZEN2HAN).lower().split()
         for t in title:
-            log.debug("%s (%s)" % (t.a.string.strip(), t.a['id']))
-            if not t.a:
-                continue
-            if t.a['id'] == 'link':
-                continue
-            t_han = t.a.string.strip().translate(ZEN2HAN).lower().split()
+            log.debug(f"{t.text}")
+            t_han = t.text.translate(ZEN2HAN).lower().split()
             t_han.append('')  # sentinel
             match = True
-            if not re.match(r'^\d{10}$', book.translate(ZEN2HAN)):  # not ISBN
+            query_isbn = self.normalize_isbn(book.translate(ZEN2HAN))
+            if query_isbn == "":  # not ISBN code
                 for b in book_han:
                     if t_han.pop(0) != b:
                         match = False
                         break
             if match:
-                book_link.append((t.a.string.strip(),
-                                 'https://calil.jp' + t.a.get('href')))
-
-        for title, link in book_link[:max_count]:
-            if self.abort:
-                log.warning('abort get_isbn_d()')
-                return None
-            try:
-                res = requests.get(link)
-            except Exception as e:
-                log.warning(e)
-                return None
-            else:
-                if res.status_code != 200:
-                    log.warning('%s return %d' % (link, res.status_code))
-                    return None
-
-            soup = bs4.BeautifulSoup(res.text, features='html.parser')
-            description = soup.find_all('div', itemprop='description')
-            for d in description:
-                for line in d.text.split('\n'):
-                    pattern = r'ISBN-10\D+(\d{9}[0-9Xx])\D*'
-                    result = re.match(pattern, line)
-                    if result:
-                        isbns[result.group(1)] = title
-
-        log.debug('get_isbn_c(): %s' % isbns)
+                for link in t.links:
+                    try:
+                        isbn = self.normalize_isbn(link.split('/')[2])
+                    except ValueError:
+                        continue
+                    if isbn:
+                        isbns[isbn] = t.text.translate(ZEN2HAN)
         return isbns
 
-    def get_isbn_h(self, book, max_count=5):
-        log.debug('get_isbn_h(%s, %d)' % (book, max_count))
-        url = 'https://honto.jp/netstore/search.html'
+    def get_isbn_h(self, book: str, max_count: int = 5) -> Dict[str, str]:
+        log.debug('get_isbn_h((%s, %d)' % (book, max_count))
+        base_url = "https://honto.jp/netstore/search_10"
+        url = f"{base_url}{book}.html"
         params = {
-            'k': book,
-            'srchf': '1',
-            'tbty': 1
+            'srchf': 1,
+            'tbty': 1,
         }
         isbns = {}
         book_link = []
+        session = HTMLSession()
         try:
-            res = requests.get(url, params=params)
+            res = session.get(url, params=params)
         except Exception as e:
             log.warning(e)
             return None
@@ -144,28 +132,26 @@ class BookStatus:
                 log.warning('%s return %d' % (url, res.status_code))
                 return None
 
-        soup = bs4.BeautifulSoup(res.text, features='html.parser')
-        title = soup.find_all('a', class_='dyTitle')
+        title = res.html.find('a.dyTitle')
         book_han = book.translate(ZEN2HAN).lower().split()
         for t in title:
-            log.debug("%s" % t)
-            t_han = t.string.translate(ZEN2HAN).lower().split()
+            log.debug(f"{t.text}")
+            t_han = t.text.translate(ZEN2HAN).lower().split()
             t_han.append('')  # sentinel
             match = True
-            if not re.match(r'^\d{10}$', book.translate(ZEN2HAN)):  # not ISBN
+            query_isbn = self.normalize_isbn(book.translate(ZEN2HAN))
+            if query_isbn == "":  # not ISBN code
                 for b in book_han:
                     if t_han.pop(0) != b:
                         match = False
                         break
             if match:
-                book_link.append((t.string.translate(ZEN2HAN), t.get('href')))
+                for link in t.links:
+                    book_link.append((t.text.translate(ZEN2HAN), link))
 
         for title, link in book_link[:max_count]:
-            if self.abort:
-                log.warning('abort get_isbn_h()')
-                return None
             try:
-                res = requests.get(link)
+                res = session.get(link)
             except Exception as e:
                 log.warning(e)
                 return None
@@ -174,15 +160,16 @@ class BookStatus:
                     log.warning('%s return %d' % (link, res.status_code))
                     return None
 
-            soup = bs4.BeautifulSoup(res.text, features='html.parser')
-            lis = soup.find_all('li', text=re.compile('ISBN'))
-            for li in lis:
-                isbn_string = li.string.split(r'：')
-                if len(isbn_string) == 2:
-                    isbn = isbn_string[1].split('-')
-                    if len(isbn) == 5:
-                        isbn.pop(0)
-                    isbns[''.join(isbn)] = title
+            uls = res.html.find('ul.stItemData')
+            for ul in uls:
+                for li in ul.find('li'):
+                    try:
+                        label, isbn = li.text.split('：')
+                    except ValueError:
+                        continue
+                    result = self.normalize_isbn(isbn)
+                    if result:
+                        isbns[result] = title
 
         log.debug('get_isbn_h(): %s' % isbns)
         return isbns
@@ -213,10 +200,6 @@ class BookStatus:
         json_data = res.json()
         timer = timeout/polling_interval
         while json_data['continue'] == 1:
-            if self.abort:
-                log.warning('abort get_book_status()')
-                return []
-
             if timer <= 0:
                 log.warning('calil.jp query time-out')
                 return []

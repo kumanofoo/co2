@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
-import time
 import os
 import re
-import json
 import pytest
 import monibot.book as book
 
@@ -12,53 +10,6 @@ os.environ['CALIL_APPKEY'] = 'calil_appkey_dummy'
 book_config = os.environ['BOOK_CONFIG']
 calil_appkey = os.environ['CALIL_APPKEY']
 testdir = 'tests/monibot'
-
-
-def requests_mock(*args, **kwargs):
-    prefix = f'{testdir}/test_book_response_mock/'
-    mockfiles = {
-        'Twiter': 'twiter-search.html',
-        'イマココ': 'imakoko-search.html'
-    }
-    time.sleep(1)
-
-    class MockResponse:
-        def __init__(self, text, status_code):
-            self.status_code = status_code
-            self.text = text
-
-        def json(self):
-            return json.loads(self.text)
-
-    if args[0].startswith('https://honto.jp/netstore/search.html'):
-        mockfile = mockfiles[kwargs['params']['k']]
-        try:
-            f = open(prefix + mockfile, encoding='utf-8')
-        except IOError as e:
-            print(e)
-            raise(e)
-        return MockResponse(f.read(), 200)
-
-    if args[0].startswith('https://honto.jp/netstore/pd-book'):
-        mockfile = args[0].split('/')[-1]
-        try:
-            f = open(prefix + mockfile, encoding='utf-8')
-        except IOError as e:
-            print(e)
-            raise(e)
-        return MockResponse(f.read(), 200)
-
-    if args[0].startswith('https://api.calil.jp/check'):
-        isbn = sorted(kwargs['params']['isbn'].split(','))[0]
-        mockfile = '%s.html' % (isbn)
-        try:
-            f = open(prefix + mockfile, encoding='utf-8')
-        except IOError as e:
-            print(e)
-            raise(e)
-        return MockResponse(f.read(), 200)
-
-    return MockResponse('', 404)
 
 
 @pytest.mark.parametrize(('config', 'appkey', 'expected'), [
@@ -81,43 +32,68 @@ def test_book_init_raise_no_key(config, appkey, expected):
 
 
 @pytest.mark.parametrize(('bk', 'expected0', 'expected1'), [
-    ('Twitter', {'book': 'Twitter', 'data': {}}, r':.+:'),  # not found
+    ('Twiter', {'book': 'Twiter', 'data': {}}, r':.+:'),  # not found
     (
         'イマココ',
         {
             'book': 'イマココ',
             'data': {
-                'イマココ 渡り鳥からグーグル・アースまで、空間認知の科学': {
-                    'Tokyo_NDL': {
-                        'name': '国立国会図書館',
-                        'url': '',
-                        'status': {}
-                    },
+                'イマココ : 渡り鳥からグーグル・アースまで、空間認知の科学': {
                     'Tokyo_Pref': {
                         'name': '東京都立図書館',
-                        'url': 'https://catalog.library.metro.tokyo.jp/winj/'
-                               'opac/switch-detail-iccap.do?bibid=1108071029',
-                        'status': {
-                            '中央': '館内のみ'
-                        }
+                        'url': 'https://catalog.library.metro.tokyo.lg.jp/winj'
+                        '/opac/switch-detail-iccap.do?bibid=1108071029',
+                        'status': {'中央': '館内のみ'}
+                    },
+                    'Tokyo_NDL': {
+                        'name': '国立国会図書館',
+                        'url': 'https://ndlonline.ndl.go.jp/#!/detail'
+                        '/R300000001-I000010845180-00',
+                        'status': {'東京本館': '蔵書あり'}
                     }
                 }
             }
         },
-        '.イマココ.\n\nイマココ 渡り鳥からグーグル・アースまで、空間認知の科学\n'
-        '(- 国立国会図書館: 蔵書なし\n- 東京都立図書館.中央.+\n|'
-        '- 東京都立図書館.中央.+\n- 国立国会図書館: 蔵書なし\n)'
+        '[イマココ]\n\nイマココ : 渡り鳥からグーグル・アースまで、空間認知の科学\n'
+        '- 東京都立図書館(中央): '
+        '<https://catalog.library.metro.tokyo.lg.jp/winj'
+        '/opac/switch-detail-iccap.do?bibid=1108071029|館内のみ>\n'
+        '- 国立国会図書館(東京本館): '
+        '<https://ndlonline.ndl.go.jp/#!/detail/R300000001-I000010845180-00|'
+        '蔵書あり>\n'
     )
 ])
 def test_book_search(mocker, bk, expected0, expected1):
-    mocker.patch('monibot.book.requests.get', side_effect=requests_mock)
     os.environ['BOOK_CONFIG'] = f'{testdir}/book-test.conf'
     os.environ['CALIL_APPKEY'] = calil_appkey
 
     bs = book.BookStatus()
     res = bs.search(bk)
     assert res[0] == expected0
-    assert re.match(expected1, res[1])
+    if bk == 'Twiter':
+        assert re.match(expected1, res[1])
+    else:
+        r = res[1].split('\n')
+        for e in expected1.split('\n'):
+            assert e in r
+
+
+def test_normalize_isbn():
+    patterns = [
+        ("978-4-8222-8993-5", "9784822289935"),
+        ("978-4834084375", "9784834084375"),
+        ("9784834084375", "9784834084375"),
+        ("483408437X", "483408437X"),
+        ("4822245640", "4822245640"),
+        ("978-4822245641", "9784822245641"),
+        ("978-482224564", ""),
+        ("483408437x", ""),
+        ("483408437", ""),
+    ]
+    bs = book.BookStatus()
+    for pattern, expected in patterns:
+        result = bs.normalize_isbn(pattern)
+        assert result == expected
 
 
 if __name__ == '__main__':
