@@ -74,9 +74,9 @@ class OutsideTemperature():
         self.datetime_format = 'at %I:%M %p on %A'
         self.degree = '°C'
 
-    def fetch_summary(self):
+    def fetch_summary(self, md_type="slack"):
         self.wt.fetch()
-        return self.wt.summary()
+        return self.wt.summary(md_type=md_type)
 
     def fetch_temperature(self):
         self.wt.fetch()
