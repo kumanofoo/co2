@@ -26,11 +26,21 @@ install_monibot() {
         install -o root -g root -m 600 monibot /etc/default
     fi
 
+    # Slack
     if [ -f /etc/systemd/system/monibotd.service ]; then
         echo skip install /etc/systemd/system/monibotd.service
     else
         install -o root -g root -m 644 \
                 monibotd.service \
+                /etc/systemd/system
+    fi
+
+    # Zulip
+    if [ -f /etc/systemd/system/monibotzd.service ]; then
+        echo skip install /etc/systemd/system/monibotzd.service
+    else
+        install -o root -g root -m 644 \
+                monibotzd.service \
                 /etc/systemd/system
     fi
 
@@ -43,14 +53,17 @@ install_monibot() {
 
     cat <<EOF
 
-Start monibotd service
-$ sodo systemctl start monibotd
+Slack bot: monibotd
+Zulip bot: monibotzd
 
-Check monibotd service
-$ systemctl status monibotd
+Start bot service
+$ sodo systemctl start [monibotd or monibotzd]
 
-Enable to start monibotd service on system boot 
-$ sudo systemctl enable monibotd
+Check service
+$ systemctl status [monibotd or monibotzd]
+
+Enable to start bot service on system boot 
+$ sudo systemctl enable [monibotd or monibotzd]
 
 EOF
 }
@@ -74,6 +87,7 @@ uninstall_monibot() {
     systemctl stop monibotd
     systemctl disable monibotd
     rm /etc/systemd/system/monibotd.service
+    rm /etc/systemd/system/monibotzd.service
     rm /etc/default/monibot
     rm -r ${monibotd_dir}
 
@@ -129,10 +143,17 @@ test_on_docker() {
     stop_docker
 }
 
-run_on_docker() {
+slack_on_docker() {
     initialize_docker
     # run monibotd
     docker exec ${docker_container} /bin/bash -c 'source /opt/monibot/bin/activate && monibot'
+    stop_docker
+}
+
+zulip_on_docker() {
+    initialize_docker
+    # run monibotd
+    docker exec ${docker_container} /bin/bash -c 'source /opt/monibot/bin/activate && monibotz'
     stop_docker
 }
 
@@ -157,8 +178,11 @@ case "$1" in
     test-docker)
         test_on_docker
         ;;
-    run-docker)
-        run_on_docker
+    slack-docker)
+        slack_on_docker
+        ;;
+    zulip-docker)
+        zulip_on_docker
         ;;
     stop-docker)
         stop_docker
