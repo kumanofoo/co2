@@ -39,6 +39,7 @@ _ = zulip.Client()
 stream_topic = os.environ["ZULIP_MONIBOT_STREAM"]
 zulip_stream, zulip_topic = stream_topic.split(":")
 zulip_email = os.environ["ZULIP_EMAIL"]
+log.debug(f"ZULIP_MONIBOT_STREAM:  #{zulip_stream}>{zulip_topic}")
 
 # Initialize Global Variable
 finish_bot = False
@@ -162,9 +163,9 @@ def book_event(param: Parameter) -> None:
             emoji = [
                 ':collision:',
                 ':moyai:',
-                ':socks:',
+                ':sandal:',
                 ':ramen:',
-                ':jack_o_lantern:'
+                ':jack-o-lantern:'
             ]
             return emoji[random.randrange(0, len(emoji))]
 
@@ -284,9 +285,7 @@ def message_handler(msg: Dict[str, Any]) -> None:
             content="",
         )
     param = Parameter(arguments=arg, tag=tag)
-    print(f"cmd: {cmd}")
-    print(f"arguments: {param.arguments}")
-    print(f"tag: {tag}")
+    log.debug(f"cmd: {cmd}, arguments: {param.arguments}, tag: {tag}")
     commands[cmd](param)
 
 

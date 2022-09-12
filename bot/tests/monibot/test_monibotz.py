@@ -1,7 +1,7 @@
 from monibot import monibotz
 
 
-def test_parse_command(self):
+def test_parse_command():
     parameter = [
         ("ip", "ip", ""),
         ("air 1d", "air", "1d"),

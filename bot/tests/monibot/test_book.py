@@ -34,33 +34,28 @@ def test_book_init_raise_no_key(config, appkey, expected):
 @pytest.mark.parametrize(('bk', 'expected0', 'expected1'), [
     ('Twiter', {'book': 'Twiter', 'data': {}}, r':.+:'),  # not found
     (
-        'イマココ',
+        'はじめて読む486',
         {
-            'book': 'イマココ',
+            'book': 'はじめて読む486',
             'data': {
-                'イマココ : 渡り鳥からグーグル・アースまで、空間認知の科学': {
-                    'Tokyo_Pref': {
-                        'name': '東京都立図書館',
-                        'url': 'https://catalog.library.metro.tokyo.lg.jp/winj'
-                        '/opac/switch-detail-iccap.do?bibid=1108071029',
-                        'status': {'中央': '館内のみ'}
-                    },
+                'はじめて読む486 32ビットコンピュータをやさしく語る': {
                     'Tokyo_NDL': {
                         'name': '国立国会図書館',
-                        'url': 'https://ndlonline.ndl.go.jp/#!/detail'
-                        '/R300000001-I000010845180-00',
+                        'url': 'https://ndlonline.ndl.go.jp/#!/detail/'
+                        'R300000001-I000002412296-00',
                         'status': {'東京本館': '蔵書あり'}
+                    },
+                    'Tokyo_Pref': {
+                        'name': '東京都立図書館',
+                        'url': '', 'status': {}
                     }
                 }
             }
         },
-        '[イマココ]\n\nイマココ : 渡り鳥からグーグル・アースまで、空間認知の科学\n'
-        '- 東京都立図書館(中央): '
-        '<https://catalog.library.metro.tokyo.lg.jp/winj'
-        '/opac/switch-detail-iccap.do?bibid=1108071029|館内のみ>\n'
-        '- 国立国会図書館(東京本館): '
-        '<https://ndlonline.ndl.go.jp/#!/detail/R300000001-I000010845180-00|'
-        '蔵書あり>\n'
+        '[はじめて読む486]\n\nはじめて読む486 32ビットコンピュータをやさしく語る\n'
+        '- 国立国会図書館(東京本館): <https://ndlonline.ndl.go.jp/#!/detail/'
+        'R300000001-I000002412296-00|蔵書あり>\n'
+        '- 東京都立図書館: 蔵書なし\n'
     )
 ])
 def test_book_search(mocker, bk, expected0, expected1):

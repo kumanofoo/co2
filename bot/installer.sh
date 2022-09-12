@@ -49,6 +49,7 @@ install_monibot() {
     else
         useradd -d ${monibotd_dir} -s /usr/sbin/nologin -r ${user_id} || exit $?
     fi
+    groupadd -f ${co2group}
     gpasswd -a ${user_id} ${co2group} &>/dev/null
 
     cat <<EOF
@@ -123,7 +124,7 @@ initialize_docker() {
     fi
 
     # exec installer in container
-    docker exec ${docker_container} /bin/bash -c "cd monibot && /bin/bash install.sh install"
+    docker exec ${docker_container} /bin/bash -c "cd monibot && /bin/bash installer.sh install"
 
     # copy config files to container
     if [ -f docker/monibot.conf ]; then
@@ -165,7 +166,7 @@ stop_docker() {
 }
 
 usage() {
-    echo "usage: ${0##*/} [install|uninstall|test-docker|run-docker|stop-docker]"
+    echo "usage: ${0##*/} [install|uninstall|test-docker|slack-docker|zulip-docker|stop-docker]"
 }
 
 case "$1" in
