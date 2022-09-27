@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.skipif("os.environ.get('ZULIP_EMAIL') is None",
                     "os.environ.get('ZULIP_API_KEY') is None",
                     "os.environ.get('ZULIP_SITE') is None",
-                    "os.environ.get('ZULIP_TAKO_STREAM') is None",
+                    "os.environ.get('ZULIP_MONIBOT_STREAM') is None",
                     reason="Need environment variables of Zulip")
 def test_parse_command():
     from monibot import monibotz
