@@ -1,7 +1,13 @@
-from monibot import monibotz
+import os
+import pytest
 
-
+@pytest.mark.skipif("os.environ.get('ZULIP_EMAIL') is None",
+                    "os.environ.get('ZULIP_API_KEY') is None",
+                    "os.environ.get('ZULIP_SITE') is None",
+                    "os.environ.get('ZULIP_TAKO_STREAM') is None",
+                    reason="Need environment variables of Zulip")
 def test_parse_command():
+    from monibot import monibotz
     parameter = [
         ("ip", "ip", ""),
         ("air 1d", "air", "1d"),
