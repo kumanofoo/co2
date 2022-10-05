@@ -186,16 +186,17 @@ def get_latest(config="co2plot.json"):
     df = read_database(database, table, tz=tz)
     latest = df.sort_values("timestamp").groupby("topic").tail(1)
 
-    measurement = {}
+    all_measurement = {}
     for index, row in latest.iterrows():
-        measurement[row.topic] = {
+        all_measurement[row.topic] = {
             "payload": guess_xsv(row.payload),
             "timestamp": index.strftime("%Y-%m-%dT%H:%M:%S%z"),
         }
 
+    measurement = {}
     for axis in config["axes"]:
         for d in axis["data"]:
-            topic = measurement.get(d["topic"])
+            topic = all_measurement.get(d["topic"])
             if not topic:
                 continue
             if not topic.get("metadata"):
@@ -206,6 +207,7 @@ def get_latest(config="co2plot.json"):
                 "name": axis["name"],
                 "unit": axis["unit"],
             }
+            measurement[d["topic"]] = topic
 
     return measurement
 

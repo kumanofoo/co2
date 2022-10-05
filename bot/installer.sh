@@ -26,6 +26,7 @@ install_monibot() {
         install -o root -g root -m 600 monibot /etc/default
     fi
 
+    # Slack
     if [ -f /etc/systemd/system/monibotd.service ]; then
         echo skip install /etc/systemd/system/monibotd.service
     else
@@ -34,23 +35,36 @@ install_monibot() {
                 /etc/systemd/system
     fi
 
+    # Zulip
+    if [ -f /etc/systemd/system/monibotzd.service ]; then
+        echo skip install /etc/systemd/system/monibotzd.service
+    else
+        install -o root -g root -m 644 \
+                monibotzd.service \
+                /etc/systemd/system
+    fi
+
     if id ${user_id} &>/dev/null; then
         echo ${user_id} user already exists.
     else
         useradd -d ${monibotd_dir} -s /usr/sbin/nologin -r ${user_id} || exit $?
     fi
+    groupadd -f ${co2group}
     gpasswd -a ${user_id} ${co2group} &>/dev/null
 
     cat <<EOF
 
-Start monibotd service
-$ sodo systemctl start monibotd
+Slack bot: monibotd
+Zulip bot: monibotzd
 
-Check monibotd service
-$ systemctl status monibotd
+Start bot service
+$ sodo systemctl start [monibotd or monibotzd]
 
-Enable to start monibotd service on system boot 
-$ sudo systemctl enable monibotd
+Check service
+$ systemctl status [monibotd or monibotzd]
+
+Enable to start bot service on system boot 
+$ sudo systemctl enable [monibotd or monibotzd]
 
 EOF
 }
@@ -74,6 +88,7 @@ uninstall_monibot() {
     systemctl stop monibotd
     systemctl disable monibotd
     rm /etc/systemd/system/monibotd.service
+    rm /etc/systemd/system/monibotzd.service
     rm /etc/default/monibot
     rm -r ${monibotd_dir}
 
@@ -109,7 +124,7 @@ initialize_docker() {
     fi
 
     # exec installer in container
-    docker exec ${docker_container} /bin/bash -c "cd monibot && /bin/bash install.sh install"
+    docker exec ${docker_container} /bin/bash -c "cd monibot && /bin/bash installer.sh install"
 
     # copy config files to container
     if [ -f docker/monibot.conf ]; then
@@ -129,10 +144,17 @@ test_on_docker() {
     stop_docker
 }
 
-run_on_docker() {
+slack_on_docker() {
     initialize_docker
     # run monibotd
     docker exec ${docker_container} /bin/bash -c 'source /opt/monibot/bin/activate && monibot'
+    stop_docker
+}
+
+zulip_on_docker() {
+    initialize_docker
+    # run monibotd
+    docker exec ${docker_container} /bin/bash -c 'source /opt/monibot/bin/activate && monibotz'
     stop_docker
 }
 
@@ -144,7 +166,7 @@ stop_docker() {
 }
 
 usage() {
-    echo "usage: ${0##*/} [install|uninstall|test-docker|run-docker|stop-docker]"
+    echo "usage: ${0##*/} [install|uninstall|test-docker|slack-docker|zulip-docker|stop-docker]"
 }
 
 case "$1" in
@@ -157,8 +179,11 @@ case "$1" in
     test-docker)
         test_on_docker
         ;;
-    run-docker)
-        run_on_docker
+    slack-docker)
+        slack_on_docker
+        ;;
+    zulip-docker)
+        zulip_on_docker
         ;;
     stop-docker)
         stop_docker

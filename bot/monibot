@@ -3,6 +3,12 @@ SLACK_APP_TOKEN=xapp-1-XXXXXXXXXXX-0123456789012-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 SLACK_BOT_TOKEN=xoxb-xxxxxxxxxxx-YYYYYYYYYYYYYYYYYYYYYYYY
 REPORT_WEBHOOK='https://hooks.slack.com/services/TXXXXXXXX/BYYYYYYYYYY/ZZZZZZZZZZZZZZZZZZZZZZZZZZ'
 
+# Zulip
+ZULIP_EMAIL=xxxx-bot@yyyyyyyy.zulipchat.com
+ZULIP_API_KEY=AbCdEfGhIjKlMnOpQrStUvWxYz012455
+ZULIP_SITE=https://yyyyyyyy.zulipchat.com
+ZULIP_MONIBOT_STEAM="general:swimming turtles"
+
 # search book
 CALIL_APPKEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 BOOK_CONFIG=/opt/monibot/etc/monibot.conf

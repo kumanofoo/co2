@@ -2,10 +2,16 @@
 <img alt="Example" src="./img/co2command.png" width="447">
 
 ## Prerequisites
-Slack platform access tokens and setting up slash commands are required.
+### Slack
+Slack platform access tokens are required.
 1. Bot token strings begin with 'xoxb-'
 2. App-level token strings begin with 'xapp-'
 3. Incoming Webhook URL
+
+### Zulip
+1. Register A bot user on the Zulip server's web interface.
+2. Download 'zuliprc' configuration file.
+3. Zulip stream for monibot.
 
 ## Installation
 ```Shell
@@ -22,6 +28,12 @@ Set environment variables.
 SLACK_APP_TOKEN=xapp-1-XXXXXXXXXXX-0123456789012-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 SLACK_BOT_TOKEN=xoxb-xxxxxxxxxxx-YYYYYYYYYYYYYYYYYYYYYYYY
 REPORT_WEBHOOK='https://hooks.slack.com/services/TXXXXXXXX/BYYYYYYYYYY/ZZZZZZZZZZZZZZZZZZZZZZZZZZ'
+
+# Zulip
+ZULIP_EMAIL=xxxx-bot@yyyyyyyy.zulipchat.com
+ZULIP_API_KEY=AbCdEfGhIjKlMnOpQrStUvWxYz012455
+ZULIP_SITE=https://yyyyyyyy.zulipchat.com
+ZULIP_MONIBOT_STEAM="general:swimming turtles"
 
 # search book
 CALIL_APPKEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

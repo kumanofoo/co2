@@ -116,7 +116,7 @@ class Weather:
 
         return float(high), highLocalTime
 
-    def summary(self):
+    def summary(self, md_type: str = ""):
         if self.weather == '':
             self.fetch()
         if self.weather == '':
@@ -135,13 +135,37 @@ class Weather:
         wd_degree = 360.0/16
         offset = wd_degree/2.0
         wd = int((cur["wind_deg"] + offset)/wd_degree) % 16
-        summary = f'*{self.EMOJI[id]} {cur["temp"]}°C*\n' \
-            f'*Feels like {cur["feels_like"]}°C. {wt["main"]}.*\n' \
-            f'{self.DIR2ARROW[self.WIND_DIR[wd]]} {cur["wind_speed"]}m/s ' \
-            f'{self.WIND_DIR[wd]}\n' \
-            f'Humidity: {cur["humidity"]}%    UV: {cur["uvi"]}\n' \
-            f'Dew point: {cur["dew_point"]}°C    ' \
-            f'Visibility: {cur["visibility"]}m\n'
+        if md_type == "slack":
+            summary = (
+                f'*{self.EMOJI[id]} {cur["temp"]}°C*\n'
+                f'*Feels like {cur["feels_like"]}°C. {wt["main"]}.*\n'
+                f'{self.DIR2ARROW[self.WIND_DIR[wd]]} {cur["wind_speed"]}m/s '
+                f'{self.WIND_DIR[wd]}\n'
+                f'Humidity: {cur["humidity"]}%    UV: {cur["uvi"]}\n'
+                f'Dew point: {cur["dew_point"]}°C    '
+                f'Visibility: {cur["visibility"]}m\n'
+            )
+        elif md_type == "zulip":
+            summary = (
+                f'**{self.EMOJI[id]} {cur["temp"]}°C**\n'
+                f'**Feels like {cur["feels_like"]}°C. {wt["main"]}.**\n'
+                f'{self.DIR2ARROW[self.WIND_DIR[wd]]} {cur["wind_speed"]}m/s '
+                f'{self.WIND_DIR[wd]}\n'
+                f'Humidity: {cur["humidity"]}%    UV: {cur["uvi"]}\n'
+                f'Dew point: {cur["dew_point"]}°C    '
+                f'Visibility: {cur["visibility"]}m\n'
+            )
+        else:
+            summary = (
+                f'{self.EMOJI[id]} {cur["temp"]}°C\n'
+                f'Feels like {cur["feels_like"]}°C. {wt["main"]}.\n'
+                f'{self.DIR2ARROW[self.WIND_DIR[wd]]} {cur["wind_speed"]}m/s '
+                f'{self.WIND_DIR[wd]}\n'
+                f'Humidity: {cur["humidity"]}%    UV: {cur["uvi"]}\n'
+                f'Dew point: {cur["dew_point"]}°C    '
+                f'Visibility: {cur["visibility"]}m\n'
+            )
+
         return summary
 
 

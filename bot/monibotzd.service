@@ -1,0 +1,13 @@
+[Unit]
+Description=Room Monitoring Zulip Bot
+
+[Service]
+ExecStart=/opt/monibot/bin/monibotz
+EnvironmentFile=/etc/default/monibot
+Restart=always
+Type=simple
+User=monibot
+Group=monibot
+
+[Install]
+WantedBy=multi-user.target
