@@ -431,7 +431,7 @@ try:
 
     c = Cron(
         check_servers,
-        interval_sec=servers.ping_interval,
+        interval_sec=servers.ping_interval_sec,
         webhook=webhook
     )
     crons.append(c)

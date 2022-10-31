@@ -68,9 +68,26 @@ monibot.conf
     "Tokyo_Pref": "東京都立図書館"
   },
   "monitor": {
-    "outside_hot_alert_threshold": 30.0,
-    "pipe_alert_threshold": -5.0,
-    "forecast_interval_hours": 4
+    "temperature": {
+      "outside_hot_alert_threshold": 30.0,
+      "pipe_alert_threshold": -5.0,
+      "forecast_interval_hours": 4
+    },
+    "servers": {
+      "ping_interval_sec": 60,
+      "alert_delay": 1,
+      "ping_servers": {
+        "https://www.example.com/": {
+          "type": "web"
+        },
+        "example.com": {
+          "type": "DNS"
+        },
+        "www.example.com": {
+          "type": "ICMP"
+        }
+      }
+    }
   },
   "getip": {
     "urls":  [

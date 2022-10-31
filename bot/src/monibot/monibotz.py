@@ -407,7 +407,7 @@ try:
 
     c = Cron(
         check_servers,
-        interval_sec=servers.ping_interval,
+        interval_sec=servers.ping_interval_sec,
         queue=q,
     )
     crons.append(c)

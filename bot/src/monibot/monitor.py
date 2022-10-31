@@ -143,8 +143,8 @@ class Server:
 
     def __init__(self):
         self.configuration = read_config("servers")
-        key = "ping_interval"
-        self.ping_interval = get_value(self.configuration, key, int)
+        key = "ping_interval_sec"
+        self.ping_interval_sec = get_value(self.configuration, key, int)
 
         key = "alert_delay"
         self.alert_delay = get_value(self.configuration, key, int)

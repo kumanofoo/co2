@@ -72,7 +72,7 @@ def test_read_config():
                         "forecast_interval_hours": 4
                     },
                     "servers": {
-                        "ping_interval": 60,
+                        "ping_interval_sec": 60,
                         "alert_delay": 1,
                         "ping_servers": {
                             "https://www.example.com/": {
@@ -91,7 +91,7 @@ def test_read_config():
         """
         config_path.write_text(normal_config)
         conf = moni.read_config("servers")
-        assert conf["ping_interval"] == 60
+        assert conf["ping_interval_sec"] == 60
         assert conf["alert_delay"] == 1
         ping_servers = conf["ping_servers"]
         assert ping_servers["https://www.example.com/"]["type"] == "Web"
@@ -146,7 +146,7 @@ class TestServer:
                 {
                     "monitor": {
                         "servers": {
-                            "ping_interval": 60,
+                            "ping_interval_sec": 60,
                             "alert_delay": 1,
                             "ping_servers": {
                                 "https://www.example.com/": {
@@ -186,7 +186,7 @@ class TestServer:
             '''{
                 "monitor": {
                     "servers": {
-                        "ping_interval": 60,
+                        "ping_interval_sec": 60,
                         "alert_delay": 0,
                         "ping_servers": {
                             "localhost": {
@@ -203,7 +203,7 @@ class TestServer:
             '''{
                 "monitor": {
                     "servers": {
-                        "ping_interval": 60,
+                        "ping_interval_sec": 60,
                         "alert_delay": 1,
                         "ping_servers": {
                             "localhost": {
@@ -220,7 +220,7 @@ class TestServer:
             '''{
                 "monitor": {
                     "servers": {
-                        "ping_interval": 60,
+                        "ping_interval_sec": 60,
                         "alert_delay": 2,
                         "ping_servers": {
                             "localhost": {
