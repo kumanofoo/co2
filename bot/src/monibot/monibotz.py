@@ -16,15 +16,15 @@ from co2 import co2plot, dateparser
 from monibot.book import BookStatus, BookStatusError
 from monibot.getip import GetIP, GetIPError
 from monibot.cron import Cron
-from monibot.monitor import OutsideTemperature, MonitorError
+from monibot.monitor import OutsideTemperature, Server, MonitorError
 
 
 # global logging settings
-MONIBOT_DEBUG = os.environ.get("MONIBOT_DEBUG")
-if MONIBOT_DEBUG == "info":
+MONIBOT_LOGGING_LEVEL = os.environ.get("MONIBOT_LOGGING_LEVEL")
+if MONIBOT_LOGGING_LEVEL == "info":
     log_level = logging.INFO
     formatter = '%(name)s: %(message)s'
-elif MONIBOT_DEBUG == "debug":
+elif MONIBOT_LOGGING_LEVEL == "debug":
     log_level = logging.DEBUG
     formatter = '%(asctime)s %(name)s[%(lineno)s] %(levelname)s: %(message)s'
 else:
@@ -186,6 +186,7 @@ def book_event(param: Parameter) -> None:
     if not book:
         param.respond(message="Sorry, the book command is out of service.")
     else:
+        param.respond(message=f'"{param.arguments}"...')
         run_search_book(param)
 
 
@@ -225,6 +226,26 @@ def ip_event(param: Parameter) -> None:
         fetch_ip(param)
 
 
+def ping_event(param: Parameter) -> None:
+    @thread
+    def ping_to_server(param: Parameter) -> None:
+        up_down = {True: "UP", False: "DOWN"}
+        message = ""
+        targets = servers.get_status()
+        for target in targets:
+            message += f"{target} is {up_down[targets[target]]}.\n"
+        if message:
+            param.respond(message=message)
+        else:
+            param.respond(message="no servers")
+
+    if not servers:
+        message = "Sorry, the ping command is out of service."
+        param.respond(message=message)
+    else:
+        ping_to_server(param)
+
+
 def help_event(param: Parameter) -> None:
     cmd = []
     if CO2PLOT:
@@ -235,6 +256,8 @@ def help_event(param: Parameter) -> None:
         cmd.append("ip")
     if forecast:
         cmd.append("weather")
+    if servers:
+        cmd.append("ping")
     cmd.append("help|?")
     message = "Usage: " + '|'.join(cmd)
     param.respond(message=message)
@@ -245,6 +268,7 @@ commands = {
     "book": book_event,
     "ip": ip_event,
     "weather": weather_event,
+    "ping": ping_event,
     "help": help_event,
     "?": help_event,
 }
@@ -369,6 +393,28 @@ except MonitorError as e:
     log.warning(f"Weather forecast: {e}")
     log.info("Disable outside temperature message")
     forecast = None
+
+try:
+    servers = Server()
+
+    def check_servers():
+        targets = servers.is_changed()
+        message = ""
+        states = {True: "UP", False: "DOWN"}
+        for target in targets:
+            message += f"{target} is {states[targets[target]]}\n"
+        return message
+
+    c = Cron(
+        check_servers,
+        interval_sec=servers.ping_interval,
+        queue=q,
+    )
+    crons.append(c)
+except MonitorError as e:
+    log.warning(f"Server monitor: {e}")
+    log.info("Disable server monitor message")
+    servers = None
 
 try:
     ip = GetIP()

@@ -17,16 +17,16 @@ import monibot
 from monibot.book import BookStatus, BookStatusError
 from monibot.command import Command
 from monibot.cron import Cron
-from monibot.monitor import OutsideTemperature, MonitorError
+from monibot.monitor import OutsideTemperature, Server, MonitorError
 from monibot.getip import GetIP, GetIPError
 
 
 # global logging settings
-MONIBOT_DEBUG = os.environ.get("MONIBOT_DEBUG")
-if MONIBOT_DEBUG == "info":
+MONIBOT_LOGGING_LEVEL = os.environ.get("MONIBOT_LOGGING_LEVEL")
+if MONIBOT_LOGGING_LEVEL == "info":
     log_level = logging.INFO
     formatter = '%(name)s: %(message)s'
-elif MONIBOT_DEBUG == "debug":
+elif MONIBOT_LOGGING_LEVEL == "debug":
     log_level = logging.DEBUG
     formatter = '%(asctime)s %(name)s[%(lineno)s] %(levelname)s: %(message)s'
 else:
@@ -194,6 +194,27 @@ def ip_event(param):
         fetch_ip(param)
 
 
+def ping_event(param):
+    @thread
+    def ping_to_server(param):
+        up_down = {True: "UP", False: "DOWN"}
+        message = ""
+        targets = servers.get_status()
+        for target in targets:
+            message += f"{target} is {up_down[targets[target]]}.\n"
+        if message:
+            param.message = message
+        else:
+            param.message = "no servers"
+        param.respond()
+
+    if not servers:
+        param.message = "Sorry, the ping command is out of service."
+        param.respond()
+    else:
+        ping_to_server(param)
+
+
 def help_event(param):
     cmd = []
     if CO2PLOT:
@@ -204,6 +225,8 @@ def help_event(param):
         cmd.append("ip")
     if forecast:
         cmd.append("weather")
+    if servers:
+        cmd.append("ping")
     cmd.append("help|?")
 
     param.message = f"Usage: {param.command} [" + '|'.join(cmd) + "]"
@@ -214,6 +237,7 @@ commands = {
     "air": air_event,
     "book": book_event,
     "ip": ip_event,
+    "ping": ping_event,
     "weather": weather_event,
     "help": help_event,
     "?": help_event,
@@ -393,6 +417,28 @@ except MonitorError as e:
     log.warning(f"Weather forecast: {e}")
     log.info("Disable outside temperature message")
     forecast = None
+
+try:
+    servers = Server()
+
+    def check_servers():
+        targets = servers.is_changed()
+        message = ""
+        states = {True: "UP", False: "DOWN"}
+        for target in targets:
+            message += f"{target} is {states[targets[target]]}\n"
+        return message
+
+    c = Cron(
+        check_servers,
+        interval_sec=servers.ping_interval,
+        webhook=webhook
+    )
+    crons.append(c)
+except MonitorError as e:
+    log.warning(f"Server monitor: {e}")
+    log.info("Disable server monitor message")
+    servers = None
 
 try:
     ip = GetIP()

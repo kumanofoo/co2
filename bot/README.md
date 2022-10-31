@@ -17,7 +17,7 @@ Slack platform access tokens are required.
 ```Shell
 $ pip install .
 ```
-You can use 'monibot' and 'co2plot' command.
+You can use 'monibot', 'monibotz' and 'co2plot' command.
 
 ## Monibot
 
@@ -55,7 +55,7 @@ GETIP_CONFIG=/opt/monibot/etc/monibot.conf
 
 #TZ=Asia/Tokyo
 #PYTHONDONTWRITEBYTECODE=1
-#MONIBOT_DEBUG=debug
+#MONIBOT_LOGGING_LEVEL=debug
 ```
 
 Create configuration file 'monibot.conf' and 'co2plot.json'.

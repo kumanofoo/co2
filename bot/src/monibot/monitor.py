@@ -1,7 +1,10 @@
+from typing import Any, Dict
 import os
+import sys
 from datetime import datetime
 import json
 from monibot.openweathermap import Weather, WeatherError
+from monibot.ping import ICMP, Web, DNS
 import logging
 log = logging.getLogger(__name__)
 
@@ -10,11 +13,11 @@ class MonitorError(Exception):
     pass
 
 
-def get_value(json, key, valuetype):
+def get_value(json, key, valuetype) -> Any:
     ret = None
 
     value = json.get(key)
-    if not value:
+    if value is None:
         raise MonitorError("'%s' not found" % key)
     try:
         ret = valuetype(value)
@@ -25,31 +28,35 @@ def get_value(json, key, valuetype):
     return ret
 
 
+def read_config(key: str) -> dict:
+    monitor_config = os.environ.get("MONITOR_CONFIG")
+    if not monitor_config:
+        raise MonitorError(
+            'no environment variable MONITOR_CONFIG')
+
+    try:
+        f = open(monitor_config, encoding='utf-8')
+    except (IOError, FileNotFoundError):
+        raise MonitorError(
+            f"cannot open configuration file '{monitor_config}'")
+
+    conf = json.load(f)
+    monitor_configuration = conf.get("monitor")
+    if not monitor_configuration:
+        raise MonitorError(
+            f"'monitor' key not found in {monitor_config}")
+
+    key_configuration = monitor_configuration.get(key)
+    if not key_configuration:
+        raise MonitorError(
+            f"'{key}' key not found in {monitor_config}:'[monitor]'")
+
+    return key_configuration
+
+
 class OutsideTemperature():
     def __init__(self):
-        self.MONITOR_CONFIG = os.environ.get("MONITOR_CONFIG")
-        if not self.MONITOR_CONFIG:
-            raise MonitorError(
-                            'no environment variable MONITOR_CONFIG')
-
-        try:
-            f = open(self.MONITOR_CONFIG, encoding='utf-8')
-        except (IOError, FileNotFoundError):
-            raise MonitorError(
-                "cannot open configuration file '{0}'".format(
-                    self.MONITOR_CONFIG))
-
-        try:
-            conf = json.load(f)
-        except ValueError as e:
-            log.warning(e)
-            raise MonitorError("cannot parse configuration")
-
-        self.configuration = conf.get('monitor')
-        if not self.configuration:
-            raise MonitorError("'monitor' key not found in %s" %
-                               {self.MONITOR_CONFIG})
-
+        self.configuration = read_config("temperature")
         key = 'outside_hot_alert_threshold'
         self.outside_hot_alert_threshold = get_value(self.configuration,
                                                      key, float)
@@ -129,3 +136,50 @@ class OutsideTemperature():
 
         log.debug("message: %s" % (mes))
         return mes
+
+
+class Server:
+    ping = {"ICMP": ICMP, "Web": Web, "DNS": DNS}
+
+    def __init__(self):
+        self.configuration = read_config("servers")
+        key = "ping_interval"
+        self.ping_interval = get_value(self.configuration, key, int)
+
+        key = "alert_delay"
+        self.alert_delay = get_value(self.configuration, key, int)
+
+        servers = self.configuration.get("ping_servers")
+        if servers is None:
+            raise MonitorError("'ping_servers' key not found")
+
+        self.servers = []
+        for s in servers:
+            sv = Server.ping[servers[s]["type"]](s)
+            sv.same_state_times = 0
+            sv.previous_state = None
+            self.servers.append(sv)
+        if len(self.servers) == 0:
+            raise MonitorError("no servers")
+
+    def get_status(self) -> Dict[str, bool]:
+        status = {}
+        for s in self.servers:
+            alive, _res = s.is_alive()
+            status[s.target] = alive
+        return status
+
+    def is_changed(self) -> Dict[str, bool]:
+        status = {}
+        for s in self.servers:
+            alive, _res = s.is_alive()
+            if s.previous_state == alive:
+                if s.same_state_times < sys.maxsize:
+                    s.same_state_times += 1
+            else:
+                s.same_state_times = 0
+            log.debug(f"{s.target}: {alive}, {s.same_state_times}")
+            s.previous_state = alive
+            if s.same_state_times == self.alert_delay:
+                status[s.target] = alive
+        return status

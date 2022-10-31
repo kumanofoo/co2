@@ -28,4 +28,4 @@ CO2PLOT=/opt/monibot/etc/co2plot.json
 GETIP_CONFIG=/opt/monibot/etc/monibot.conf
 
 #PYTHONDONTWRITEBYTECODE=1
-#MONIBOT_DEBUG=debug
+#MONIBOT_LOGGING_LEVEL=debug
