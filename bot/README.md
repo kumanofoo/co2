@@ -78,7 +78,7 @@ monibot.conf
       "alert_delay": 1,
       "ping_servers": {
         "https://www.example.com/": {
-          "type": "web"
+          "type": "Web"
         },
         "example.com": {
           "type": "DNS"
