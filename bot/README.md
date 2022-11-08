@@ -17,7 +17,7 @@ Slack platform access tokens are required.
 ```Shell
 $ pip install .
 ```
-You can use 'monibot' and 'co2plot' command.
+You can use 'monibot', 'monibotz' and 'co2plot' command.
 
 ## Monibot
 
@@ -55,7 +55,7 @@ GETIP_CONFIG=/opt/monibot/etc/monibot.conf
 
 #TZ=Asia/Tokyo
 #PYTHONDONTWRITEBYTECODE=1
-#MONIBOT_DEBUG=debug
+#MONIBOT_LOGGING_LEVEL=debug
 ```
 
 Create configuration file 'monibot.conf' and 'co2plot.json'.
@@ -68,9 +68,26 @@ monibot.conf
     "Tokyo_Pref": "東京都立図書館"
   },
   "monitor": {
-    "outside_hot_alert_threshold": 30.0,
-    "pipe_alert_threshold": -5.0,
-    "forecast_interval_hours": 4
+    "temperature": {
+      "outside_hot_alert_threshold": 30.0,
+      "pipe_alert_threshold": -5.0,
+      "forecast_interval_hours": 4
+    },
+    "servers": {
+      "ping_interval_sec": 60,
+      "alert_delay": 1,
+      "ping_servers": {
+        "https://www.example.com/": {
+          "type": "Web"
+        },
+        "example.com": {
+          "type": "DNS"
+        },
+        "www.example.com": {
+          "type": "ICMP"
+        }
+      }
+    }
   },
   "getip": {
     "urls":  [
