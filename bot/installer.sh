@@ -16,7 +16,7 @@ install_monibot() {
     source ${monibotd_dir}/bin/activate
     pip install wheel
     pip install .[dev]
-    install -m 755 -D -d ${etc_dir}
+    install -m 755 -d ${etc_dir}
     install -m 644 monibot-sample.conf ${etc_dir}
     install -m 644 co2plot-sample.json ${etc_dir}
 
@@ -51,6 +51,10 @@ install_monibot() {
     fi
     groupadd -f ${co2group}
     gpasswd -a ${user_id} ${co2group} &>/dev/null
+
+    # matplotlib cache directory
+    install -m 700 -o ${user_id} -g ${co2group} -d ${monibotd_dir}/.config 
+    install -m 700 -o ${user_id} -g ${co2group} -d ${monibotd_dir}/.config/matplotlib
 
     cat <<EOF
 
