@@ -41,6 +41,7 @@ def test_outsidetemperature(mocker, lowest, highest, days, expected):
     assert mes.startswith(expected)
 
     mes = outside.fetch_temperature()
+    assert mes is not None
     assert mes.startswith('A low of')
 
 
@@ -73,7 +74,7 @@ def test_read_config():
                     },
                     "servers": {
                         "ping_interval_sec": 60,
-                        "alert_delay": 1,
+                        "previous_data_points": 10,
                         "ping_servers": {
                             "https://www.example.com/": {
                                 "type": "Web"
@@ -92,7 +93,7 @@ def test_read_config():
         config_path.write_text(normal_config)
         conf = moni.read_config("servers")
         assert conf["ping_interval_sec"] == 60
-        assert conf["alert_delay"] == 1
+        assert conf["previous_data_points"] == 10
         ping_servers = conf["ping_servers"]
         assert ping_servers["https://www.example.com/"]["type"] == "Web"
         assert ping_servers["example.com"]["type"] == "DNS"
@@ -147,7 +148,7 @@ class TestServer:
                     "monitor": {
                         "servers": {
                             "ping_interval_sec": 60,
-                            "alert_delay": 1,
+                            "previous_data_points": 10,
                             "ping_servers": {
                                 "https://www.example.com/": {
                                     "type": "Web"
@@ -180,84 +181,198 @@ class TestServer:
                 assert status[s] is True
 
     delay_and_return = {
-        "delay = 0": (
-            [1, 1, 1, 0, 0, 0, 1, 0, 1, 0],
-            [1, 0, 0, 1, 0, 0, 1, 1, 1, 1],
+        "good": (
+            {
+                "localhost_icmp": {
+                    "alive": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    "expected": [True, None, None, None, None,
+                                 None, None, None, None, None, None],
+                },
+                "localhost_web": {
+                    "alive": [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                    "expected": [True, "good", None, "noisy", None,
+                                 None, None, None, None, None, None],
+                },
+                "localhost_dns": {
+                    "alive": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    "expected": ["good", "noisy", None, None, None,
+                                 None, None, None, None, False, None],
+                },
+            },
+            {
+                0.9: "good",
+                0.0: "noisy"
+            },
+            None,
+            '''{
+                "monitor": {
+                    "servers": {
+                        "ping_interval_sec": 60,
+                        "previous_data_points": 10,
+                        "ping_servers": {
+                            "localhost_icmp": {
+                                "type": "ICMP"
+                            },
+                            "localhost_web": {
+                                "type": "Web"
+                            },
+                            "localhost_dns": {
+                                "type": "DNS"
+                            }
+                        }
+                    }
+                }
+            }''',
+        ),
+        "noisy": (
+            {
+                "localhost_icmp": {
+                    "alive": [1, 0, 1, 0, 1,
+                              1, 1, 1, 1, 1,
+                              1, 1, 1, 1, 1],
+                    "expected": [True, "good", None, "noisy", None,
+                                 None, None, None, None, None,
+                                 None, "good", None, True, None],
+                },
+                "localhost_web": {
+                    "alive": [0, 0, 0, 0, 0,
+                              0, 0, 0, 0, 0,
+                              1, 1, 1, 1, 1],
+                    "expected": ["good", "noisy", None, None, None,
+                                 None, None, None, None, False,
+                                 "noisy", None, None, None, None],
+                },
+                "localhost_dns": {
+                    "alive": [1, 0, 1, 0, 1,
+                              1, 1, 1, 1, 1,
+                              1, 1, 1, 0, 1],
+                    "expected": [True, "good", None, "noisy", None,
+                                 None, None, None, None, None,
+                                 None, "good", None, None, None],
+                }
+            },
+            {
+                0.9: "good",
+                0.0: "noisy"
+            },
+            (False, True),
+            '''{
+                "monitor": {
+                    "servers": {
+                        "ping_interval_sec": 60,
+                        "previous_data_points": 10,
+                        "ping_servers": {
+                            "localhost_icmp": {
+                                "type": "ICMP"
+                            },
+                            "localhost_web": {
+                                "type": "Web"
+                            },
+                            "localhost_dns": {
+                                "type": "DNS"
+                            }
+                        }
+                    }
+                }
+            }''',
+        ),
+        "bad": (
+            {
+                "localhost_icmp": {
+                    "alive": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    "expected": ["up", "good", "noisy",
+                                 None, None, None, None, None, None, None,
+                                 "down"]
+                },
+                "localhost_web": {
+                    "alive": [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    "expected": ["good", None, None, None, None,
+                                 None, None, None, None, None,
+                                 "up"]
+                },
+                "localhost_dns": {
+                    "alive": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                    "expected": ["up", "good", "noisy", None, None,
+                                 None, None, None, None, None,
+                                 None]
+                },
+            },
+            {
+                0.9: "good",
+                0.0: "noisy"
+            },
+            ("down", "up"),
             '''{
                 "monitor": {
                     "servers": {
                         "ping_interval_sec": 60,
                         "alert_delay": 0,
+                        "previous_data_points": 10,
                         "ping_servers": {
-                            "localhost": {
+                            "localhost_icmp": {
                                 "type": "ICMP"
+                            },
+                            "localhost_web": {
+                                "type": "Web"
+                            },
+                            "localhost_dns": {
+                                "type": "DNS"
                             }
                         }
                     }
                 }
             }''',
         ),
-        "delay = 1": (
-            [0, 0, 0, 1, 1, 1, 0, 1, 0, 1],
-            [0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-            '''{
-                "monitor": {
-                    "servers": {
-                        "ping_interval_sec": 60,
-                        "alert_delay": 1,
-                        "ping_servers": {
-                            "localhost": {
-                                "type": "ICMP"
-                            }
-                        }
-                    }
-                }
-            }''',
-        ),
-        "delay = 2": (
-            [0, 0, 0, 1, 1, 1, 0, 0, 1, 1],
-            [0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
-            '''{
-                "monitor": {
-                    "servers": {
-                        "ping_interval_sec": 60,
-                        "alert_delay": 2,
-                        "ping_servers": {
-                            "localhost": {
-                                "type": "ICMP"
-                            }
-                        }
-                    }
-                }
-            }''',
-        )
     }
 
     @pytest.mark.parametrize(
-        "states, expected, config",
+        "targets, classes, class10, config",
         list(delay_and_return.values()),
         ids=list(delay_and_return.keys()))
-    def test_is_changed(self, mocker, states, expected, config):
-        return_values = [
+    def test_is_changed(self, mocker, targets, classes, class10, config):
+        for t in targets:
+            assert len(targets[t]["alive"]) == len(targets[t]["expected"])
+
+        return_values_icmp = [
             [(False, "ICMP mocker"), (True, "ICMP mocker")][x]
-            for x in states
+            for x in targets["localhost_icmp"]["alive"]
         ]
-        mocker.patch("monibot.ping.ICMP.is_alive", side_effect=return_values)
+        mocker.patch(
+            "monibot.ping.ICMP.is_alive",
+            side_effect=return_values_icmp)
+        return_values_web = [
+            [(False, "Web mocker"), (True, "Web mocker")][x]
+            for x in targets["localhost_web"]["alive"]
+        ]
+        mocker.patch(
+            "monibot.ping.Web.is_alive",
+            side_effect=return_values_web)
+        return_values_dns = [
+            [(False, "DNS mocker"), (True, "DNS mocker")][x]
+            for x in targets["localhost_dns"]["alive"]
+        ]
+        mocker.patch(
+            "monibot.ping.DNS.is_alive",
+            side_effect=return_values_dns)
 
         with TemporaryDirectory() as dname:
             config_path = Path(dname) / "test_read_config.json"
             os.environ["MONITOR_CONFIG"] = str(config_path)
             config_path.write_text(config)
             servers = moni.Server()
-            for sta, exp in zip(states, expected):
-                changes = servers.is_changed()
-                if exp == 0:
-                    assert len(changes) == 0
+            for i, _ in enumerate(return_values_dns):
+                if class10 is None:
+                    changes = servers.is_changed(classes=classes)
                 else:
-                    assert len(changes) == 1
-                    for target in changes:
-                        alive = changes[target]
-                        assert alive == [False, True][sta]
+                    changes = servers.is_changed(
+                        classes=classes,
+                        class1=class10[1],
+                        class0=class10[0])
+
+                for target in targets:
+                    exp = targets[target]["expected"][i]
+                    state = changes.get(target)
+                    assert state == exp, f"{i}: {target}\n{changes}"
 
 
 if __name__ == '__main__':

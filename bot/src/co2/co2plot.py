@@ -42,7 +42,7 @@ def read_database(database, table, tz='UTC'):
     df.timestamp = pd.to_timedelta(df.timestamp, unit='ns') \
         + pd.to_datetime('1970/1/1', utc=True)
     df = df.set_index('timestamp')
-    df.index = df.index.tz_convert(tz)
+    df.index = df.index.tz_convert(tz)  # type: ignore
 
     return df
 
@@ -76,9 +76,9 @@ def guess_xsv(data):
             return res_dict
         return res
     except json.decoder.JSONDecodeError:
-        return None
+        return {}
 
-    return None
+    return {}
 
 
 def extract_plot_data(df, topic, column):
@@ -190,7 +190,7 @@ def get_latest(config="co2plot.json"):
     for index, row in latest.iterrows():
         all_measurement[row.topic] = {
             "payload": guess_xsv(row.payload),
-            "timestamp": index.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "timestamp": index.strftime("%Y-%m-%dT%H:%M:%S%z"),  # type: ignore
         }
 
     measurement = {}

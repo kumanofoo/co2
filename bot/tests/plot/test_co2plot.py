@@ -21,13 +21,13 @@ guess_xsv_patterns = [
     ("0.0,10, 20.02,   -1,          -2.2", expected_dict),
     ("0.0\t10\t 20.02\t   -1\t          -2.2", expected_dict),
     ("0.0 10 20.02   -1          -2.2", expected_dict),
-    ("0.0,10 20.02,   -1          -2.2", None),
+    ("0.0,10 20.02,   -1          -2.2", {}),
     ('{"Temperature": 20.0, "Humidity": 22.5, "Carbon Dioxide": 450}',
         {"Temperature": 20.0, "Humidity": 22.5, "Carbon Dioxide": 450.0}),
     ('{"Switch": "On", "Light": "Off", "Carbon Dioxide": 450}',
         {"Switch": "On", "Light": "Off",  "Carbon Dioxide": 450}),
     ('[0.0, 10, 20.02, -1, -2.2]', expected_dict),
-    ('{"Temperature": 20.0 "Humidity": 22.5, "Carbon Dioxide": 450}', None),
+    ('{"Temperature": 20.0 "Humidity": 22.5, "Carbon Dioxide": 450}', {}),
 ]
 
 
@@ -152,8 +152,8 @@ def png_hash_without_text(filename):
         while chunk_type != 'IEND':
             chunk_size = int.from_bytes(f.read(4), byteorder='big')
             chunk_type = f.read(4).decode('utf-8')
-            chunk = f.read(chunk_size)
-            crc = f.read(4)
+            f.read(chunk_size)  # read chunk !!DO NOT REMOVE THIS LINE!!
+            f.read(4)  # read crc !!DO NOT REMOVE THIS LINE!!
             if chunk_type == 'tEXt':
                 hash_without_text = hashlib.sha256(f.read()).hexdigest()
                 break
