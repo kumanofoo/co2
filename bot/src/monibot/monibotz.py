@@ -9,7 +9,7 @@ import threading
 import time
 import tempfile
 import random
-from typing import Any, Tuple, Dict, List, Callable, ParamSpec
+from typing import Any, Tuple, Dict, List, Callable
 import requests
 import zulip
 from co2 import co2plot, dateparser
@@ -91,11 +91,8 @@ def signal_handler(signum, frame):
     log.info('Signal handler called with signal %d' % signum)
 
 
-P = ParamSpec('P')
-
-
-def thread(func: Callable[P, None]) -> Callable[P, threading.Thread]:
-    def _wrapper(*args: P.args, **kwargs: P.kwargs) -> threading.Thread:
+def thread(func) -> Callable[..., threading.Thread]:
+    def _wrapper(*args: Any, **kwargs: Any) -> threading.Thread:
         thread = threading.Thread(target=func, args=args, kwargs=kwargs)
         log.debug(f"start {func.__name__} thread...")
         thread.start()
