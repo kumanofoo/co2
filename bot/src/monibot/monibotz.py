@@ -9,7 +9,7 @@ import threading
 import time
 import tempfile
 import random
-from typing import Any, Tuple, Dict, List
+from typing import Any, Tuple, Dict, List, Callable
 import requests
 import zulip
 from co2 import co2plot, dateparser
@@ -91,8 +91,8 @@ def signal_handler(signum, frame):
     log.info('Signal handler called with signal %d' % signum)
 
 
-def thread(func):
-    def _wrapper(*args, **kwargs):
+def thread(func) -> Callable[..., threading.Thread]:
+    def _wrapper(*args: Any, **kwargs: Any) -> threading.Thread:
         thread = threading.Thread(target=func, args=args, kwargs=kwargs)
         log.debug(f"start {func.__name__} thread...")
         thread.start()
@@ -102,6 +102,8 @@ def thread(func):
 
 @thread
 def co2_command(param: Parameter) -> None:
+    if CO2PLOT is None:
+        return
     figure_png = None
     if param.arguments == "now":
         now = co2plot.get_latest(config=CO2PLOT)
@@ -151,6 +153,8 @@ def co2_command(param: Parameter) -> None:
 def book_event(param: Parameter) -> None:
     @thread
     def run_search_book(param: Parameter) -> None:
+        if book is None:
+            return
         result, text_ = book.search(param.arguments)
         text = result_by_string(result)
         if text:
@@ -200,6 +204,8 @@ def air_event(param: Parameter) -> None:
 def weather_event(param: Parameter) -> None:
     @thread
     def fetch_summary(param: Parameter) -> None:
+        if forecast is None:
+            return
         summary = forecast.fetch_summary(md_type="zulip")
         if summary:
             param.respond(message=summary)
@@ -215,6 +221,8 @@ def weather_event(param: Parameter) -> None:
 def ip_event(param: Parameter) -> None:
     @thread
     def fetch_ip(param: Parameter):
+        if ip is None:
+            return
         message = ip.get()
         if message is None:
             message = "Failed to fetch IP address."
@@ -229,6 +237,8 @@ def ip_event(param: Parameter) -> None:
 def ping_event(param: Parameter) -> None:
     @thread
     def ping_to_server(param: Parameter) -> None:
+        if servers is None:
+            return
         up_down = {True: "UP", False: "DOWN"}
         message = ""
         targets = servers.get_status()
@@ -324,10 +334,12 @@ def call_on_message() -> None:
                 log.warning(f"Server returned error:\n{res['msg']}")
                 time.sleep(1)
             else:
-                return (res["queue_id"], res["last_event_id"])
+                break
+        return (res["queue_id"], res["last_event_id"])
     queue_id = None
+    last_event_id = None
     while not finish_bot:
-        if queue_id is None:
+        if queue_id is None or last_event_id is None:
             (queue_id, last_event_id) = do_register()
         try:
             res = client.get_events(
@@ -398,19 +410,25 @@ try:
     servers = Server()
 
     def check_servers():
-        targets = servers.is_changed()
+        if servers is None:
+            return ""
+        targets = servers.is_changed(
+            classes={0.9: ":yellow_circle:", 0.0: ":orange_circle:"},
+            class1=":green_circle:",
+            class0=":red_circle:",
+        )
         message = ""
-        states = {True: "UP", False: "DOWN"}
         for target in targets:
-            message += f"{target} is {states[targets[target]]}\n"
+            message += f"{targets[target]} {target}\n"
         return message
 
-    c = Cron(
-        check_servers,
-        interval_sec=servers.ping_interval_sec,
-        queue=q,
-    )
-    crons.append(c)
+    if servers:
+        c = Cron(
+            check_servers,
+            interval_sec=servers.ping_interval_sec,
+            queue=q,
+        )
+        crons.append(c)
 except MonitorError as e:
     log.warning(f"Server monitor: {e}")
     log.info("Disable server monitor message")

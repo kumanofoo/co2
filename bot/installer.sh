@@ -55,6 +55,8 @@ install_monibot() {
     # matplotlib cache directory
     install -m 700 -o ${user_id} -g ${co2group} -d ${monibotd_dir}/.config 
     install -m 700 -o ${user_id} -g ${co2group} -d ${monibotd_dir}/.config/matplotlib
+    install -m 700 -o ${user_id} -g ${co2group} -d ${monibotd_dir}/.cache 
+    install -m 700 -o ${user_id} -g ${co2group} -d ${monibotd_dir}/.cache/matplotlib
 
     cat <<EOF
 

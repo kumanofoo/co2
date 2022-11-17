@@ -1,6 +1,5 @@
 from typing import Any, Dict
 import os
-import sys
 from datetime import datetime
 import json
 from monibot.openweathermap import Weather, WeatherError
@@ -146,8 +145,8 @@ class Server:
         key = "ping_interval_sec"
         self.ping_interval_sec = get_value(self.configuration, key, int)
 
-        key = "alert_delay"
-        self.alert_delay = get_value(self.configuration, key, int)
+        key = "previous_data_points"
+        self.previous_data_points = get_value(self.configuration, key, int)
 
         servers = self.configuration.get("ping_servers")
         if servers is None:
@@ -156,8 +155,9 @@ class Server:
         self.servers = []
         for s in servers:
             sv = Server.ping[servers[s]["type"]](s)
+            sv.monitor_latest = [1]*self.previous_data_points
+            sv.monitor_previous_state = None
             sv.same_state_times = 0
-            sv.previous_state = None
             self.servers.append(sv)
         if len(self.servers) == 0:
             raise MonitorError("no servers")
@@ -169,17 +169,39 @@ class Server:
             status[s.target] = alive
         return status
 
-    def is_changed(self) -> Dict[str, bool]:
+    def is_changed(
+            self,
+            classes: Dict[float, Any] = {},
+            class0: Any = False,
+            class1: Any = True
+    ) -> Dict[str, Any]:
         status = {}
         for s in self.servers:
             alive, _res = s.is_alive()
-            if s.previous_state == alive:
-                if s.same_state_times < sys.maxsize:
-                    s.same_state_times += 1
+            if alive:
+                s.monitor_latest.append(1)
             else:
-                s.same_state_times = 0
-            log.debug(f"{s.target}: {alive}, {s.same_state_times}")
-            s.previous_state = alive
-            if s.same_state_times == self.alert_delay:
-                status[s.target] = alive
+                s.monitor_latest.append(0)
+            s.monitor_latest.pop(0)
+
+            latest_alive_average = sum(s.monitor_latest)/len(s.monitor_latest)
+
+            state = None
+            if latest_alive_average == 1.0:
+                state = class1
+            elif latest_alive_average == 0.0:
+                state = class0
+            else:
+                for minimum in sorted(classes.keys(), reverse=True):
+                    if latest_alive_average >= minimum:
+                        state = classes[minimum]
+                        break
+
+            if state is None or s.monitor_previous_state == state:
+                pass
+            else:
+                status[s.target] = state
+                s.monitor_previous_state = state
+
+            log.debug(f"{s.target}: {alive}, {state}")
         return status

@@ -88,6 +88,8 @@ def thread(func):
 
 @thread
 def co2_command(param):
+    if CO2PLOT is None:
+        return
     figure_png = None
     if param.command == "now":
         now = co2plot.get_latest(config=CO2PLOT)
@@ -141,6 +143,8 @@ def co2_command(param):
 def book_event(param):
     @thread
     def run_search_book(param):
+        if book is None:
+            return
         result_, text = book.search(param.command)
         param.message = text
         param.respond()
@@ -163,6 +167,8 @@ def air_event(param):
 def weather_event(param):
     @thread
     def fetch_summary(param):
+        if forecast is None:
+            return
         summary = forecast.fetch_summary()
         if summary:
             param.message = summary
@@ -182,6 +188,8 @@ def weather_event(param):
 def ip_event(param):
     @thread
     def fetch_ip(param):
+        if ip is None:
+            return
         param.message = ip.get()
         if param.message is None:
             param.message = "Failed to fetch IP address."
@@ -197,6 +205,8 @@ def ip_event(param):
 def ping_event(param):
     @thread
     def ping_to_server(param):
+        if servers is None:
+            return
         up_down = {True: "UP", False: "DOWN"}
         message = ""
         targets = servers.get_status()
@@ -279,7 +289,7 @@ def get_user_id(text):
     result = re.match(r"^<@(\w+?)>\s*(.*)", text)
     if result:
         return result.groups()
-    return None
+    return None, None
 
 
 @app.event("app_mention")
@@ -313,32 +323,33 @@ def home_opened(client, event):
         }
     })
     fields = []
-    now = co2plot.get_latest(config=CO2PLOT)
-    if now:
-        abrvs = {
-            "degree celsius": "°",
-            "parcentage": "%",
-            "Temperature": ("🌡", "%.1f"),
-            "Humidity": ("💧", "%.1f"),
-            "Carbon Dioxide": ("💨", "%d"),
-        }
-        air_quality = ""
-        for topic in now:
-            air_quality += f"{topic} ({now[topic]['timestamp']})\n"
-            for n in now[topic]["metadata"]:
-                meta = now[topic]["metadata"][n]
-                (name, fmt) = abrvs.get(meta['name'], (meta['name'], "%f"))
-                unit = abrvs.get(meta['unit'], meta['unit'])
-                val = now[topic]["payload"][n]
-                air_quality += "%s " % name
-                air_quality += fmt % val
-                air_quality += "%s" % unit
-                air_quality += " "
-            air_quality += "\n"
-        fields.append({
-            "type": "mrkdwn",
-            "text": air_quality,
-        })
+    if CO2PLOT:
+        now = co2plot.get_latest(config=CO2PLOT)
+        if now:
+            abrvs = {
+                "degree celsius": "°",
+                "parcentage": "%",
+                "Temperature": ("🌡", "%.1f"),
+                "Humidity": ("💧", "%.1f"),
+                "Carbon Dioxide": ("💨", "%d"),
+            }
+            air_quality = ""
+            for topic in now:
+                air_quality += f"{topic} ({now[topic]['timestamp']})\n"
+                for n in now[topic]["metadata"]:
+                    meta = now[topic]["metadata"][n]
+                    (name, fmt) = abrvs.get(meta['name'], (meta['name'], "%f"))
+                    unit = abrvs.get(meta['unit'], meta['unit'])
+                    val = now[topic]["payload"][n]
+                    air_quality += "%s " % name
+                    air_quality += fmt % val
+                    air_quality += "%s" % unit
+                    air_quality += " "
+                air_quality += "\n"
+            fields.append({
+                "type": "mrkdwn",
+                "text": air_quality,
+            })
     if forecast:
         summary = forecast.fetch_summary()
         if summary is None:
@@ -422,19 +433,28 @@ try:
     servers = Server()
 
     def check_servers():
-        targets = servers.is_changed()
+        if servers is None:
+            return ""
+        targets = servers.is_changed(
+            classes={
+                0.9: ":large_yellow_circle:",
+                0.0: ":large_orange_circle:"
+            },
+            class1=":large_green_circle:",
+            class0=":red_circle:",
+        )
         message = ""
-        states = {True: "UP", False: "DOWN"}
         for target in targets:
-            message += f"{target} is {states[targets[target]]}\n"
+            message += f"{targets[target]} {target}\n"
         return message
 
-    c = Cron(
-        check_servers,
-        interval_sec=servers.ping_interval_sec,
-        webhook=webhook
-    )
-    crons.append(c)
+    if servers:
+        c = Cron(
+            check_servers,
+            interval_sec=servers.ping_interval_sec,
+            webhook=webhook
+        )
+        crons.append(c)
 except MonitorError as e:
     log.warning(f"Server monitor: {e}")
     log.info("Disable server monitor message")
