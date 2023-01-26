@@ -20,25 +20,53 @@
 Default configuration file is 'co2db.json' in current directory.
 Or you can use environment variable 'CO2DB_CONFIG' to specify its path.
 
+```Shell
+export CO2DB_CONFIG='/opt/co2/co2db.json'
+export RUST_LOG=info
+```
 
+#### co2db.json for *co2db*
 ```Json
 {
   "broker_uri": "tcp://my.broker.address:1883",
   "topics": ["location1/sensor", "location2/sensor"],
   "qos": [1, 2],
-  "database": "co2.db",
-  "table": "measurement",
-  "client_id": "logger01"
+  "client_id": "logger01",
+  "database": "/opt/co2/co2.db",
+  "table": "measurement"
 }
+```
 
+#### co2db.json for *mqtt2rest* (rest client)
+```Json
+{
+  "broker_uri": "tcp://my.broker.address:1883",
+  "topics": ["location1/sensor", "location2/sensor"],
+  "qos": [1, 2],
+  "client_id": "logger01",
+  "url": "http://my.restserver.address:10101/co2db"
+}
+```
+
+#### co2db.json for *rest2co2db* (rest server)
+```Json
+{
+  "port": 10101,
+  "path": "/co2db",
+  "database": "/opt/co2/co2.db",
+  "table": "measurement"
+}
+```
+
+#### co2db.json for *dbrot*
+```Json
+{
+  "database": "/opt/co2/co2.db",
+  "table": "measurement"
+}
 ```
 NOTE: 'database', 'table' and 'qos' are optional. 'qos' list match 'topics'.
 Default value of 'qos' is 1.
-
-```Shell
-export CO2DB_CONFIG='path/to/co2db.json'
-export RUST_LOG=info
-```
 
 ## SQLite
 ### Table

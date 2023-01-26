@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::{offset::LocalResult, DateTime, Duration, TimeZone, Utc};
 use rusqlite::{params, Connection, Result};
 use serde::Deserialize;
 use std::{env, fs, fs::File, io::BufReader, path::Path};
@@ -8,15 +8,21 @@ pub const DEFAULT_CONFIG_FILE: &str = "./co2db.json";
 pub const DEFAULT_DATABASE: &str = "./co2.db";
 pub const DEFAULT_TABLE: &str = "measurement";
 pub const DEFAULT_QOS: i32 = 1;
+pub const DEFAULT_URL: &str = "http://localhost";
+pub const DEFAULT_PORT: u16 = 10101;
+pub const DEFAULT_PATH: &str = "/";
 
 #[derive(Deserialize, Debug, Clone)]
 struct _Config {
     database: Option<String>,
     table: Option<String>,
-    broker_uri: String,
-    topics: Vec<String>,
+    broker_uri: Option<String>,
+    topics: Option<Vec<String>>,
     qos: Option<Vec<i32>>,
-    client_id: String,
+    client_id: Option<String>,
+    url: Option<String>,
+    port: Option<u16>,
+    path: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -27,6 +33,29 @@ pub struct Config {
     pub topics: Vec<String>,
     pub qos: Vec<i32>,
     pub client_id: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ConfigRestServer {
+    pub database: String,
+    pub table: String,
+    pub port: u16,
+    pub path: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ConfigRestClient {
+    pub broker_uri: String,
+    pub topics: Vec<String>,
+    pub qos: Vec<i32>,
+    pub client_id: String,
+    pub url: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ConfigDB {
+    pub database: String,
+    pub table: String,
 }
 
 impl Config {
@@ -40,7 +69,11 @@ impl Config {
             Ok(config) => config,
             Err(why) => return Err(why.to_string()),
         };
-        let topic_n = _config.topics.len();
+        let _topics = match _config.topics {
+            Some(t) => t,
+            None => return Err("Key not found in config: \"topics\"".to_string()),
+        };
+        let topic_n = _topics.len();
         let qos = match _config.qos {
             Some(qos) => {
                 if qos.len() != topic_n {
@@ -53,18 +86,111 @@ impl Config {
 
         // set default if need
         Ok(Config {
-            broker_uri: _config.broker_uri,
-            topics: _config.topics,
-            client_id: _config.client_id,
             database: _config.database.unwrap_or(DEFAULT_DATABASE.to_string()),
             table: _config.table.unwrap_or(DEFAULT_TABLE.to_string()),
+            broker_uri: _config
+                .broker_uri
+                .expect("Key not found in config \"broker_uri\""),
+            topics: _topics,
             qos: qos,
+            client_id: _config
+                .client_id
+                .expect("Key not found in config \"client_id\""),
         })
     }
 
     pub fn read() -> Result<Config, String> {
         let config_file = env::var(CONFIG_KEY).unwrap_or(DEFAULT_CONFIG_FILE.to_string());
         Config::read_from_file(&config_file)
+    }
+
+    pub fn read_rest_server_from_file(filename: &str) -> Result<ConfigRestServer, String> {
+        let file = match File::open(filename) {
+            Ok(file) => file,
+            Err(why) => return Err(why.to_string()),
+        };
+        let reader = BufReader::new(file);
+        let _config: _Config = match serde_json::from_reader(reader) {
+            Ok(config) => config,
+            Err(why) => return Err(why.to_string()),
+        };
+
+        // set default if need
+        Ok(ConfigRestServer {
+            database: _config.database.unwrap_or(DEFAULT_DATABASE.to_string()),
+            table: _config.table.unwrap_or(DEFAULT_TABLE.to_string()),
+            port: _config.port.unwrap_or(DEFAULT_PORT),
+            path: _config.path.unwrap_or(DEFAULT_PATH.to_string()),
+        })
+    }
+
+    pub fn read_rest_server() -> Result<ConfigRestServer, String> {
+        let config_file = env::var(CONFIG_KEY).unwrap_or(DEFAULT_CONFIG_FILE.to_string());
+        Config::read_rest_server_from_file(&config_file)
+    }
+
+    pub fn read_rest_client_from_file(filename: &str) -> Result<ConfigRestClient, String> {
+        let file = match File::open(filename) {
+            Ok(file) => file,
+            Err(why) => return Err(why.to_string()),
+        };
+        let reader = BufReader::new(file);
+        let _config: _Config = match serde_json::from_reader(reader) {
+            Ok(config) => config,
+            Err(why) => return Err(why.to_string()),
+        };
+        let _topics = _config.topics.expect("Key not found in config: \"topics\"");
+        let topic_n = _topics.len();
+        let qos = match _config.qos {
+            Some(qos) => {
+                if qos.len() != topic_n {
+                    return Err("The QoS list must match topics".to_string());
+                }
+                qos
+            }
+            None => vec![DEFAULT_QOS; topic_n],
+        };
+
+        // set default if need
+        Ok(ConfigRestClient {
+            broker_uri: _config
+                .broker_uri
+                .expect("Key not found in config \"broker_uri\""),
+            topics: _topics,
+            qos: qos,
+            client_id: _config
+                .client_id
+                .expect("Key not found in config \"client_id\""),
+            url: _config.url.expect("Key not found in config \"url\""),
+        })
+    }
+
+    pub fn read_rest_client() -> Result<ConfigRestClient, String> {
+        let config_file = env::var(CONFIG_KEY).unwrap_or(DEFAULT_CONFIG_FILE.to_string());
+        Config::read_rest_client_from_file(&config_file)
+    }
+
+    pub fn read_dbinfo_from_file(filename: &str) -> Result<ConfigDB, String> {
+        let file = match File::open(filename) {
+            Ok(file) => file,
+            Err(why) => return Err(why.to_string()),
+        };
+        let reader = BufReader::new(file);
+        let _config: _Config = match serde_json::from_reader(reader) {
+            Ok(config) => config,
+            Err(why) => return Err(why.to_string()),
+        };
+
+        // set default if need
+        Ok(ConfigDB {
+            database: _config.database.unwrap_or(DEFAULT_DATABASE.to_string()),
+            table: _config.table.unwrap_or(DEFAULT_TABLE.to_string()),
+        })
+    }
+
+    pub fn read_dbinfo() -> Result<ConfigDB, String> {
+        let config_file = env::var(CONFIG_KEY).unwrap_or(DEFAULT_CONFIG_FILE.to_string());
+        Config::read_dbinfo_from_file(&config_file)
     }
 }
 
@@ -123,9 +249,10 @@ impl Co2db {
         };
         let seconds = unixtime_ns / 1000000000 as i64;
         let nano = (unixtime_ns % 1000000000) as u32;
-        let unixtime: DateTime<Utc> = Utc.timestamp(seconds, nano);
-
-        Ok(unixtime)
+        match Utc.timestamp_opt(seconds, nano) {
+            LocalResult::Single(unixtime) => Ok(unixtime),
+            _ => Err("out-of-range seconds and/or invalid nanosecond".to_string()),
+        }
     }
 
     pub fn latest_datetime(&self) -> Result<DateTime<Utc>, String> {
@@ -139,9 +266,10 @@ impl Co2db {
         };
         let seconds = unixtime_ns / 1000000000 as i64;
         let nano = (unixtime_ns % 1000000000) as u32;
-        let unixtime: DateTime<Utc> = Utc.timestamp(seconds, nano);
-
-        Ok(unixtime)
+        match Utc.timestamp_opt(seconds, nano) {
+            LocalResult::Single(unixtime) => Ok(unixtime),
+            _ => return Err("out-of-range seconds and/or invalid nanosecond".to_string()),
+        }
     }
 
     pub fn count_rows(&self) -> Result<i64, String> {

@@ -1,8 +1,26 @@
 {
+  "//": "for co2db",
   "broker_uri": "tcp://my.broker.address:1883",
   "topics": ["location1/sensor", "location2/sensor"],
   "qos": [1, 2],
+  "client_id": "logger01",
   "database": "/opt/co2/co2.db",
-  "table": "measurement",
-  "client_id": "logger01"
+  "table": "measurement"
+
+  "//": "for mqtt2rest",
+  "broker_uri": "tcp://my.broker.address:1883",
+  "topics": ["location1/sensor", "location2/sensor"],
+  "qos": [1, 2],
+  "client_id": "logger01",
+  "url": "http://my.restserver.address:10101/co2db"
+
+  "//": "for rest2co2db",
+  "port": 10101,
+  "path": "/co2db",
+  "database": "/opt/co2/co2.db",
+  "table": "measurement"
+
+  "//": "for dbrot",
+  "database": "/opt/co2/co2.db",
+  "table": "measurement"
 }

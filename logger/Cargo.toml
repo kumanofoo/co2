@@ -12,13 +12,25 @@ path = "src/co2db/bin/main.rs"
 name = "dbrot"
 path = "src/dbrot/bin/main.rs"
 
+[[bin]]
+name = "rest2co2db"
+path = "src/rest2co2db/bin/main.rs"
+
+[[bin]]
+name = "mqtt2rest"
+path = "src/mqtt2rest/bin/main.rs"
+
 [dependencies]
-chrono = "0.4"
+axum = "0.6"
 env_logger = "0.8"
+chrono = "0.4"
+clap = "2"
+futures = "0.3"
 log = "0.4"
 paho-mqtt = "0.11"
 rusqlite = "0.25.1"
-clap = "2"
+reqwest = { version = "0.11", features = ["json"] }
 serde={ version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 signal-hook = "0.3.8"
+tokio = { version = "1", features = ["full"] }

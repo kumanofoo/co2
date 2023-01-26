@@ -1,0 +1,13 @@
+[Unit]
+Description=Co2 REST message to DB
+
+[Service]
+WorkingDirectory=/opt/co2
+ExecStart=/opt/co2/bin/rest2co2db
+Restart=always
+Type=simple
+User=co2
+Group=co2
+
+[Install]
+WantedBy=multi-user.target

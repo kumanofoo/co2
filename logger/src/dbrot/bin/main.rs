@@ -17,8 +17,8 @@ where
     T: Into<OsString> + Clone,
 {
     let app = App::new("dbrot")
-        .version("0.1.0")
-        .author("kumanofoo <kumanofoo@gmail.com>")
+        .version(env!("CARGO_PKG_VERSION"))
+        .author(env!("CARGO_PKG_AUTHORS"))
         .about("rotation log in sqlite3")
         .arg(
             Arg::with_name("keep")
@@ -51,7 +51,9 @@ where
     }
 
     match (matches.value_of("keep"), matches.value_of("rotate")) {
-        (Some(_), Some(_)) => return Err("cannot use 'keep' and 'rotate' at the same time.".to_string()),
+        (Some(_), Some(_)) => {
+            return Err("cannot use 'keep' and 'rotate' at the same time.".to_string())
+        }
         (_, _) => (),
     }
 
@@ -129,12 +131,15 @@ fn main() {
     env_logger::init();
 
     let args: Vec<String> = env::args().collect();
-    let argument = parse_args(args).unwrap_or_else(|e| {println!("option error: {}", e); process::exit(0)});
+    let argument = parse_args(args).unwrap_or_else(|e| {
+        eprintln!("{}", e);
+        process::exit(0)
+    });
 
-    let config = match co2db::Config::read() {
+    let config = match co2db::Config::read_dbinfo() {
         Ok(conf) => conf,
         Err(e) => {
-            println!("configuration error: {}", e);
+            eprintln!("configuration error: {}", e);
             process::exit(0);
         }
     };
@@ -145,13 +150,13 @@ fn main() {
     match argument {
         ARGUMENT::KEEP(days) => {
             db.leave_rows(days).unwrap_or_else(|e| panic!("{}", e));
-        },
+        }
         ARGUMENT::TIMESTAMP => {
             display_datetime(&db);
-        },
+        }
         ARGUMENT::ROTATE(rotate) => {
             rotate_file(&config.database, &config.table, rotate as i64);
-        },
+        }
         ARGUMENT::NONE => (),
     }
 }
@@ -194,7 +199,9 @@ mod tests {
 
     #[test]
     fn error_parse() {
-        let usage = "dbrot 0.1.0\nkumanofoo <kumanofoo@gmail.com>\nrotation log in sqlite3\n\nUSAGE:\n    dbrot [FLAGS] [OPTIONS]\n\nFLAGS:\n    -h, --help         Prints help information\n    -t, --timestamp    Display earliest and latest timestamp\n    -V, --version      Prints version information\n\nOPTIONS:\n    -k, --keep <time_spec>    Keep log days, months or years.\n                              For example, 7d, 1m(60 days) or 2y.\n    -r, --rotate <rotate>     Number of log files shoud be kept.".to_string();
+        let usage = format!("dbrot {}\n{}\nrotation log in sqlite3\n\nUSAGE:\n    dbrot [FLAGS] [OPTIONS]\n\nFLAGS:\n    -h, --help         Prints help information\n    -t, --timestamp    Display earliest and latest timestamp\n    -V, --version      Prints version information\n\nOPTIONS:\n    -k, --keep <time_spec>    Keep log days, months or years.\n                              For example, 7d, 1m(60 days) or 2y.\n    -r, --rotate <rotate>     Number of log files shoud be kept.",
+                            env!("CARGO_PKG_VERSION"),
+                            env!("CARGO_PKG_AUTHORS"));
         let args: Vec<&str> = vec!["dbrot"];
         assert_eq!(parse_args(args), Ok(ARGUMENT::NONE));
 

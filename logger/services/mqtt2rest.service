@@ -1,0 +1,13 @@
+[Unit]
+Description=Co2 MQTT message to REST server
+
+[Service]
+WorkingDirectory=/opt/co2
+ExecStart=/opt/co2/bin/mqtt2rest
+Restart=always
+Type=simple
+User=co2
+Group=co2
+
+[Install]
+WantedBy=multi-user.target

@@ -27,7 +27,13 @@ fn subscribe_topics(cli: &mqtt::Client, topics: &[String], qos: &[i32]) {
 
 fn main() {
     env_logger::init();
-    let config = co2db::Config::read().unwrap();
+    let config = match co2db::Config::read() {
+        Ok(c) => c,
+        Err(e) => {
+            log::error!("Failed to read configuration file: {}", e);
+            std::process::exit(1);
+        }
+    };
     let cfg = config.clone();
 
     log::info!("database: {}", config.database);
