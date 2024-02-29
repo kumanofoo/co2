@@ -44,11 +44,13 @@ jobs:
       run: |
         dirname="${{ env.PACKAGE_NAME }}-${GITHUB_REF#refs/tags/}-${{ matrix.target }}"
         mkdir "$dirname"
-        bins=$(grep -A1 '\[\[bin\]\]' Cargo.toml | sed -n 's/^name = "\(.*\)"/\1/p')
+        bins=$(grep -A1 '\[\[bin\]\]' Cargo.toml | sed -n 's/^name = "\(.*\)"/\1/p')       
         echo $bins
-        echo "./target/${{ matrix.target }}/release/"
-        ls "./target/${{ matrix.target }}/release/"
-        cd "./target/${{ matrix.target }}/release/" && for b in $bins; do mv $b "$dirname"; done
+        targetdir="./target/${{ matrix.target }}/release/"
+        echo $targetdir
+        ls "$targetdir"
+        for b in $bins; do echo "$targetdir"/$b "$dirname"; done
+        for b in $bins; do mv "$targetdir"/$b "$dirname"; done
         tar -czf "../$dirname.tar.gz" "$dirname"
         echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
 
