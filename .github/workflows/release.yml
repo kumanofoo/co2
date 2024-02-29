@@ -46,7 +46,8 @@ jobs:
         mkdir "$dirname"
         bins=$(grep -A1 '\[\[bin\]\]' Cargo.toml | sed -n 's/^name = "\(.*\)"/\1/p')
         echo $bins
-        ls -l "./target/${{ matrix.target }}/release/"
+        echo "./target/${{ matrix.target }}/release/"
+        ls "./target/${{ matrix.target }}/release/"
         cd "./target/${{ matrix.target }}/release/" && for b in $bins; do mv $b "$dirname"; done
         tar -czf "../$dirname.tar.gz" "$dirname"
         echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
