@@ -10,6 +10,9 @@ co2bin='co2db dbrot'
 restbin='mqtt2rest rest2co2db dbrot'
 allbin='co2db mqtt2rest rest2co2db dbrot'
 binpath=target/release
+if [ ! -d ${binpath} ]; then
+    binpath=.
+fi
 config=co2db.json
 config_ex=co2db.json-example
 services=./services
