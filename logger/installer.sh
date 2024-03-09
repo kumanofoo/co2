@@ -27,6 +27,7 @@ build_co2() {
 install_co2() {
     install -v -m 755 -d ${co2dir}
     install -v -m 755 -d ${co2dir}/bin
+    installed=""
     for b in ${allbin}; do
         if [ -f "${binpath}/${b}" ]; then
             (cd ${binpath} && install -v -m 755 -t ${co2dir}/bin ${b})
@@ -35,18 +36,27 @@ install_co2() {
             unitfile="${b}.service"
             if [ -f "${services}/${unitfile}" ]; then
                 install -v -m 644 -t ${co2dir} ${services}/${unitfile}
-                ln -f -s ${co2dir}/${unitfile} /etc/systemd/system
+                systemctl link ${co2dir}/${unitfile}
+		installed="$installed$b "
             fi
         fi
     done
     install -v -m 644 -t ${co2dir} ${config_ex}
 
     if id "${co2user}" &>/dev/null; then
-	$co2user user already exists.
+	echo $co2user user already exists.
     else
 	useradd -d ${co2dir} -s /usr/sbin/nologin -r ${co2user} || exit $?
     fi
     chown -R ${co2user}:${co2user} ${co2dir}
+    if [ "x$installed" != "x" ]; then
+	echo
+	echo "Start service after edit co2db.json:"
+	echo "  # systemctl start co2db mqtt2rest rest2mqtt"
+	echo
+	echo "Start at boot:"
+	echo "  # systemctl enable co2db mqtt2rest rest2mqtt"
+    fi
 }
 
 uninstall_co2() {
@@ -55,7 +65,6 @@ uninstall_co2() {
 	if [ -f "/etc/systemd/system/${unitfile}" ]; then
 	    systemctl stop ${b}
 	    systemctl disable ${b}
-	    rm /etc/systemd/system/${unitfile}
 	    rm ${co2dir}/${unitfile} 2> /dev/null || true
 	fi
     done
