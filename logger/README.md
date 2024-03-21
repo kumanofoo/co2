@@ -1,19 +1,61 @@
 # CO2DB
+*co2db* stores carbon dioxide, temperature and humidity levels from MQTT broker in SQLite database.
 
 ## Requirements
 ### crate
-- chrono(0.4.19)
-- env_logger(0.8.3)
-- log(0.4.14)
-- paho-mqtt(0.9.1)
+- axum(0.6)
+- chrono(0.4)
+- env_logger(0.8)
+- features(0.3)
+- log(0.4)
+- paho-mqtt(0.11)
+- reqwest(0.11)
 - rustqlite(0.24.2)
 - clap(2.33.3)
-- serde(1.0.125)
-- serde_json(1.0.64)
-- signal-hook(0.3.8)
+- serde(1.0)
+- serde_json(1.0)
+- signal-hook(0.3)
+- tokio(1)
 
 ### library
 - libsqlite3-dev(3.31.1-4ubuntu0.2)
+
+## Installation
+### Linux binaries
+Please check out the [releases page](https://github.com/kumanofoo/co2/releases) for binaries.
+```Shell
+wget https://github.com/kumanofoo/co2/releases/download/0.2.1/co2db-0.2.1-armv7-unknown-linux-musleabihf.tar.gz
+tar zxvf co2db-0.2.1-armv7-unknown-linux-musleabihf.tar.gz
+cd co2db-0.2.1-armv7-unknown-linux-musleabihf
+sudo bash install.sh install
+```
+
+### Building binaries
+```Shell
+sudo apt install libsqlite3-dev
+git clone https://github.com/kumanofoo/co2.git
+cd co2/logger
+cargo build --release --bins
+sudo bash installer.sh install
+```
+
+The install shell script install.sh creates */opt/co2* directory and copy files there:
+- binaries: *co2db*, *dbrot*, *mqtt2rest*, *rest2co2db*
+- unit files for systemd: *co2db.service*, *mqtt2rest.service*, *rest2co2db.service*
+- an example of configuration file: *co2db.json-example*
+
+Binaries can be build individually.
+```Shell
+cargo build --release --bin co2db
+sudo bash installer.sh install
+```
+
+### Uninstall all files
+```Shell
+sudo bash installer.sh uninstall
+```
+The script deletes all copied files and all files in /opt/co2. 
+
 
 ## Configurations
 ### JSON and Environment variables
