@@ -158,6 +158,7 @@ async fn shutdown_signal() {
     }
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_client() {
     let url = "http://httpbin.org/post";
@@ -176,23 +177,33 @@ async fn test_client() {
     rest_client(rx, url.to_string()).await;
 }
 
+/// Test subscriber
+/// 
+/// # Requirements
+/// - MQTT broker
+/// - REST server
+/// 
+/// Store 'test_config_mqtt_client.json' in the 'tests' directory and delete the line '#[ignore]' below.
+///  
+#[ignore]
 #[tokio::test]
 async fn test_subscriber() {
+    
     let (tx, mut rx) = channel::<Measurement>(32);
-    let config = ConfigRestClient {
-        broker_uri: "tcp://192.168.8.4:1883".to_string(),
-        topics: vec!["living/SCD30".to_string()],
-        qos: vec![1],
-        client_id: "restc-x".to_string(),
-        url: "https://httpbin.org/post".to_string(),
+    let config = match co2db::Config::read_rest_client_from_file("tests/test_config_mqtt_client.json") {
+        Ok(c) => c,
+        Err(e) => {
+            panic!("configration error: {}", e);
+        }
     };
+    let topics = config.topics.to_vec();
     let _ = tokio::spawn(subscriber(tx, config));
 
     for i in 0..2 {
         println!("wait for {}.", i);
         if let Some(msg) = rx.recv().await {
             println!("{:?}", msg);
-            assert_eq!(msg.topic, "living/SCD30");
+            assert!(topics.contains(&msg.topic))
         } else {
             panic!("channel is closed.");
         }

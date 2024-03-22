@@ -1,0 +1,7 @@
+{
+    "broker_uri": "tcp://my.brocer.address:1883",
+    "topics": ["location1/sensor", "location2/sensor"],
+    "qos": [1, 2],
+    "client_id": "logger01",
+    "url": "http://my.restserver.address:10101/co2db"
+}
