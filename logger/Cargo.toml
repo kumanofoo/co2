@@ -40,3 +40,6 @@ openssl = { version = "*", features = ["vendored"] }
 
 [target.'cfg(not(target_env = "musl"))'.dependencies]
 rusqlite = "0.25"
+
+[dev-dependencies]
+strip-ansi-escapes = "0.2"
