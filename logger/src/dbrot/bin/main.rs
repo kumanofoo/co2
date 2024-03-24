@@ -208,9 +208,15 @@ mod tests {
         let args: Vec<&str> = vec!["dbrot", "-h"];
         assert_eq!(parse_args(args), Err(usage));
 
-        let usage = "\u{1b}[1;31merror:\u{1b}[0m Found argument \'\u{1b}[33m-a\u{1b}[0m\' which wasn\'t expected, or isn\'t valid in this context\n\nUSAGE:\n    dbrot [FLAGS] [OPTIONS]\n\nFor more information try \u{1b}[32m--help\u{1b}[0m".to_string();
+        let usage = "error: Found argument \'-a\' which wasn\'t expected, or isn\'t valid in this context\n\nUSAGE:\n    dbrot [FLAGS] [OPTIONS]\n\nFor more information try --help".to_string();
         let args: Vec<&str> = vec!["dbrot", "-a"];
-        assert_eq!(parse_args(args), Err(usage));
+        let result = parse_args(args);
+        assert!(result.is_err());
+        if let Err(e) = result {
+            // strip ansi escapes
+            let plain_e = String::from_utf8(strip_ansi_escapes::strip(&e)).unwrap();
+            assert_eq!(plain_e, usage);
+        }
 
         let args: Vec<&str> = vec!["dbrot", "-k", "10.0"];
         assert!(parse_args(args).is_err());
