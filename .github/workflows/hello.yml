@@ -1,0 +1,31 @@
+name: Hello
+on:
+  workflow_dispatch:
+
+jobs:
+  print-matrix:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ matrix.source }}
+    strategy:
+      matrix:
+        target: [armv7-unknown-linux-musleabihf, aarch64-unknown-linux-musl]
+        source: [logger, raspberry-pi/ds18b20]
+        include:
+          - target: x86_64-unknown-linux-musl
+            source: logger
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: step1
+        run: |
+          pwd
+          echo ${{ matrix.target }}
+          cd ..
+          pwd
+      - name: step2
+        run: |
+          pwd
+          echo ${{ matrix.target }}
