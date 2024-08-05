@@ -19,13 +19,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: step1
+      - name: Extract crate information      
         run: |
-          pwd
-          echo ${{ matrix.target }}
-          cd ..
-          pwd
-      - name: step2
+          echo "PACKAGE_NAME=$(sed -n 's/^name = "(.*\)"/\1/p' Cargo.toml | head -n1)" >> $GITHUB_ENV
+      - name: Install Rust toolchain
         run: |
-          pwd
           echo ${{ matrix.target }}
+      - name: Build archive
+        shell: bash
+        run: |
+          echo "${{ env.PACKAGE_NAME }}-${GITHUB_REF#refs/tags/}-${{ matrix.target }}"
+          echo $(grep -A1 '\[\[bin\]\]' Cargo.toml | sed -n 's/^name = "\(.*\)"/\1/p')
