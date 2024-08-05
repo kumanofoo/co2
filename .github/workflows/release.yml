@@ -53,8 +53,8 @@ jobs:
         targetdir="./target/${{ matrix.target }}/release/"
         for b in $bins; do mv "$targetdir"/$b "$dirname"; done
         cp -a ${{ matrix.config }} "$dirname"
-        tar -czf "../$dirname.tar.gz" "$dirname"
-        echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
+        tar -czf "${{ github.workspace }}/${dirname}.tar.gz" "$dirname"
+        echo "ASSET=${dirname}.tar.gz" >> $GITHUB_ENV
 
     - name: Release
       uses: softprops/action-gh-release@v1
