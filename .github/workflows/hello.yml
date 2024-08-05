@@ -37,7 +37,9 @@ jobs:
           dirname="${{ env.PACKAGE_NAME }}-hello-${{ matrix.target }}"
           mkdir "$dirname"
           bins=$(grep -A1 '\[\[bin\]\]' Cargo.toml | sed -n 's/^name = "\(.*\)"/\1/p')
-          targetdir="./target/${{ matrix.target }}/release/"
+          pwd
+          ls -l
+          targetdir="./target/${{ matrix.target }}/release"
           for b in $bins; do mv "$targetdir"/$b "$dirname"; done
           cp -a ${{ matrix.config }} "$dirname"
           tar -czf "../${dirname}.tar.gz" "$dirname"
