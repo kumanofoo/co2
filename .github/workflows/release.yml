@@ -55,8 +55,21 @@ jobs:
         cp -a ${{ matrix.config }} "$dirname"
         tar -czf "${{ github.workspace }}/${dirname}.tar.gz" "$dirname"
         echo "ASSET=${dirname}.tar.gz" >> $GITHUB_ENV
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ASSET }}
+        path: ${{ env.ASSET }}
 
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: downloads
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        files: ${{ env.ASSET }}
+        files: downloads/*
