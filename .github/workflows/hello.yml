@@ -33,7 +33,7 @@ jobs:
         run: |
           pwd
           ls
-          dirname="${{ env.PACKAGE_NAME }}-${GITHUB_REF#refs/tags/}-${{ matrix.target }}"
+          dirname="${{ env.PACKAGE_NAME }}-test-${{ matrix.target }}"
           echo "${{ matrix.config }}" > ${dirname}.txt
           ls
       - name: Upload artifacts
