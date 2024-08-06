@@ -44,7 +44,7 @@ jobs:
     - name: Build package
       run: |
         cross build --release --bins --target ${{ matrix.target }}
-    - name: Build archive
+    - name: Build and upload archive
       shell: bash
       run: |
         dirname="${{ env.PACKAGE_NAME }}-${GITHUB_REF#refs/tags/}-${{ matrix.target }}"
@@ -53,21 +53,5 @@ jobs:
         targetdir="./target/${{ matrix.target }}/release/"
         for b in $bins; do mv "$targetdir"/$b "$dirname"; done
         cp -a ${{ matrix.config }} "$dirname"
-        tar -czf "${{ github.workspace }}/${dirname}.tar.gz" "$dirname"
-        echo "ASSET=${dirname}.tar.gz" >> $GITHUB_ENV
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ env.ASSET }}
-        path: ${{ env.ASSET }}
-
-  release:
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: ./*.tar.gz
+        tar -czf "${dirname}.tar.gz" "$dirname"
+        gh release upload ${GITHUB_REF#ref/tags/} ${dirname}.tar.gz
