@@ -36,11 +36,12 @@ jobs:
           dirname="${{ env.PACKAGE_NAME }}-test-${{ matrix.target }}"
           echo "${{ matrix.config }}" > ${dirname}.txt
           ls
+          echo "ASSET=${dirname}.txt" >> $GITHUB_ENV
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${dirname}.txt
-          path: ${dirname}.txt
+          name: ${{ env.ASSET }}
+          path: ${{ env.ASSET }}
 
   finalize:
     needs: [matrix-jobs]
