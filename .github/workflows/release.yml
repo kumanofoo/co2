@@ -12,7 +12,17 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release
+        run: |
+          gh release create ${GITHUB_REF#ref/tags/}
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
+
   build:
+    needs: [initialize]
     runs-on: ubuntu-latest
     defaults:
       run:
