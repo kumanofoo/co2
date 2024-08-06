@@ -55,3 +55,5 @@ jobs:
         cp -a ${{ matrix.config }} "$dirname"
         tar -czf "${dirname}.tar.gz" "$dirname"
         gh release upload ${GITHUB_REF#ref/tags/} ${dirname}.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ github.TOKEN }}
