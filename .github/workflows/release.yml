@@ -12,17 +12,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  initialize:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create release
-        run: |
-          gh release create ${GITHUB_REF#ref/tags/}
-        env:
-          GITHUB_TOKEN: ${{ github.TOKEN }}
-
   build:
-    needs: [initialize]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -63,7 +53,9 @@ jobs:
         targetdir="./target/${{ matrix.target }}/release/"
         for b in $bins; do mv "$targetdir"/$b "$dirname"; done
         cp -a ${{ matrix.config }} "$dirname"
-        tar -czf "${dirname}.tar.gz" "$dirname"
-        gh release upload ${GITHUB_REF#ref/tags/} ${dirname}.tar.gz
-      env:
-        GITHUB_TOKEN: ${{ github.TOKEN }}
+        tar -czf "${{ github.workspace }}/${dirname}.tar.gz" "$dirname"
+        echo "ASSET=${dirname}.tar.gz" >> $GITHUB_ENV
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ${{ env.ASSET }}
