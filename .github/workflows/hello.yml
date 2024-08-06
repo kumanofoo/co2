@@ -54,8 +54,11 @@ jobs:
           ls
       - name: Download artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: downloads
       - name: Results of download
         shell: bash
         run: |
           pwd
           ls
+          ls downloads
