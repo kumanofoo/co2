@@ -34,14 +34,14 @@ jobs:
           pwd
           ls
           dirname="${{ env.PACKAGE_NAME }}-test-${{ matrix.target }}"
-          echo "${{ matrix.config }}" > ${dirname}.txt
+          echo "${{ matrix.config }}" > ${{ github.workspace }}/${dirname}.txt
           ls
           echo "ASSET=${dirname}.txt" >> $GITHUB_ENV
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ASSET }}
-          path: ${{ env.ASSET }}
+          path: "${{ github.workspace }}/${{ env.ASSET }}"
 
   finalize:
     needs: [matrix-jobs]
