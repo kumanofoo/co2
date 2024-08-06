@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  print-matrix:
+  matrix-jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,6 +32,29 @@ jobs:
         shell: bash
         run: |
           pwd
-          ls -l
-          echo "${{ github.workspace }}"
-          echo "${GITHUB_WORKSPACE}"
+          ls
+          dirname="${{ env.PACKAGE_NAME }}-${GITHUB_REF#refs/tags/}-${{ matrix.target }}"
+          touch ${dirname}.txt
+          ls
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${dirname}.txt
+          path: ${dirname}.txt
+
+  finalize:
+    needs: [matrix-jobs]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check finalize environment
+        shell: bash
+        run: |
+          pwd
+          ls
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+      - name: Results of download
+        shell: bash
+        run: |
+          pwd
+          ls
