@@ -7,7 +7,7 @@ REPORT_WEBHOOK='https://hooks.slack.com/services/TXXXXXXXX/BYYYYYYYYYY/ZZZZZZZZZ
 ZULIP_EMAIL=xxxx-bot@yyyyyyyy.zulipchat.com
 ZULIP_API_KEY=AbCdEfGhIjKlMnOpQrStUvWxYz012455
 ZULIP_SITE=https://yyyyyyyy.zulipchat.com
-ZULIP_MONIBOT_STEAM="general:swimming turtles"
+ZULIP_MONIBOT_STREAM="general:swimming turtles"
 
 # search book
 CALIL_APPKEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
