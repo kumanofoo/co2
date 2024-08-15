@@ -34,29 +34,28 @@ def test_book_init_raise_no_key(config, appkey, expected):
 @pytest.mark.parametrize(('bk', 'expected0', 'expected1'), [
     ('Twiter', {'book': 'Twiter', 'data': {}}, r':.+:'),  # not found
     (
-        'はじめて読む486',
+        '血と汗とピクセル',
         {
-            'book': 'はじめて読む486',
+            'book': '血と汗とピクセル',
             'data': {
-                'はじめて読む486 32ビットコンピュータをやさしく語る': {
-                    'Tokyo_NDL': {
-                        'name': '国立国会図書館',
-                        'url': 'https://ndlonline.ndl.go.jp/#!/detail/'
-                        'R300000001-I000002412296-00',
-                        'status': {'東京本館': '蔵書あり'}
-                    },
+                '血と汗とピクセル : 大ヒットゲーム開発者たちの激戦記': {
                     'Tokyo_Pref': {
                         'name': '東京都立図書館',
-                        'url': '', 'status': {}
+                        'url': '',
+                        'status': {}
+                    },
+                    'Tokyo_NDL': {
+                        'name': '国立国会図書館',
+                        'url': 'https://ndlsearch.ndl.go.jp/books/R100000002-I029742144',
+                        'status': {'東京本館': '蔵書あり'}
                     }
                 }
             }
         },
-        '[はじめて読む486]\n\nはじめて読む486 32ビットコンピュータをやさしく語る\n'
-        '- 国立国会図書館(東京本館): <https://ndlonline.ndl.go.jp/#!/detail/'
-        'R300000001-I000002412296-00|蔵書あり>\n'
+        '[血と汗とピクセル]\n\n血と汗とピクセル : 大ヒットゲーム開発者たちの激戦記\n'
         '- 東京都立図書館: 蔵書なし\n'
-    )
+        '- 国立国会図書館(東京本館): <https://ndlsearch.ndl.go.jp/books/R100000002-I029742144|蔵書あり>\n'
+    ),
 ])
 def test_book_search(mocker, bk, expected0, expected1):
     os.environ['BOOK_CONFIG'] = f'{testdir}/book-test.conf'

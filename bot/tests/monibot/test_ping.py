@@ -23,7 +23,7 @@ def test_dns():
     assert res == "Request Timeout", f"{res}"
 
     parameters = [
-        ("www.example.com", True, '93.184.216.34'),
+        ("www.example.com", True, '93.184.215.14'),
         ("www.example.invalid", False,
          "Hostname does not exist"),
         ("xyz", False, "No records"),

@@ -324,6 +324,7 @@ if __name__ == '__main__':
     for debug
     """
     log_level = logging.DEBUG
+    #log_level = logging.ERROR
     formatter = '%(asctime)s %(name)s[%(lineno)s] %(levelname)s: %(message)s'
     logging.basicConfig(level=log_level, format=formatter)
 
@@ -336,7 +337,7 @@ if __name__ == '__main__':
     インターネットを256倍使うための本: a few title
     誰が音楽をタダにした？: with a special character
     """
-    books = ['michi', '星界の報告', 'Twiter']
+    books = ['michi', '星界の報告', 'Twiter', '血と汗とピクセル']
     # books = ['ナポレオン', 'リーダブルコード', 'インターネットを256倍使うための本', '誰が音楽をタダにした？']
 
     bs = BookStatus()
