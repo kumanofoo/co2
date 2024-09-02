@@ -366,8 +366,8 @@ def call_on_message() -> None:
                 if (res.get("code") == "BAD_EVENT_QUEUE_ID" or
                         res["msg"].startswith("Bad event queue id:")):
                     queue_id = None
-                time.sleep(1)
-                continue
+            time.sleep(1)
+            continue
         for event in res["events"]:
             last_event_id = max(last_event_id, int(event["id"]))
             if event["type"] == "message":
@@ -455,12 +455,16 @@ def main():
         except queue.Empty:
             continue
         log.debug(f'dequeue message: {mes}')
-        client.send_message(dict(
-            type="stream",
-            to=zulip_stream,
-            subject=zulip_topic,
-            content=mes,
-        ))
+        try:
+            client.send_message(dict(
+                type="stream",
+                to=zulip_stream,
+                subject=zulip_topic,
+                content=mes,
+            ))
+        except requests.exceptions.RequestException as e:
+            log.warning(f"Can't send a message from the queue: {e}")
+            continue
     log.info("Wait stopping bot...")
     th.join()
     for c in crons:
