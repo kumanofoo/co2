@@ -18,7 +18,7 @@ class Weather:
     fetch weather forecast from OpenWeather
     """
     def __init__(self):
-        self.weather = ''
+        self.weather = {}
 
         MY_PLACE = os.environ.get("MY_PLACE")
         if not MY_PLACE:
@@ -30,7 +30,7 @@ class Weather:
         if not self.api_key:
             raise WeatherError("no environment variable OPENWEATHER_API_KEY")
 
-        self.weather = ''
+        self.weather = {}
         self.EMOJI = {
             2: ":thunder_cloud_and_rain:",
             3: ":umbrella_with_rain_drops:",
@@ -77,44 +77,46 @@ class Weather:
             'exclude=minutely&units=metric&'
             f'appid={self.api_key}&lat={self.lat}&lon={self.lon}'
         )
-        resp = requests.get(url)
+        try:
+            resp = requests.get(url)
+        except Exception as e:
+            log.warning(f"Requests failure: {e}")
+            self.weather = {}
+            return False
+        
         if resp.status_code == 200:
             self.weather = json.loads(resp.text)
+            return True
         else:
             log.error("Connection failure to %s" % url)
-            self.weather = ''
+            self.weather = {}
+            return False
+
+    def lowest_highest(self):
+        if not self.weather:
+            self.fetch()
+        if not self.weather:
+            return (None, None), (None, None)
+        try:
+            lowest_data = min(self.weather['hourly'][0:24], key=lambda x: x['temp'])
+            highest_data = max(self.weather['hourly'][0:24], key=lambda x: x['temp'])
+            low = lowest_data['temp']
+            lowLocalTime = datetime.fromtimestamp(lowest_data['dt'])
+            high = highest_data['temp']
+            highLocalTime = datetime.fromtimestamp(highest_data['dt'])
+        except Exception as e:
+            log.warning(f"Failed to get temperature: {e.__class__.__name__}: {e}")
+            return (None, None), (None, None)
+
+        return (low, lowLocalTime), (high, highLocalTime)
 
     def lowest(self):
-        if self.weather == '':
-            self.fetch()
-        if self.weather == '':
-            return None, None
-
-        low = float('inf')
-        lowTime = None
-        for h in range(0, 24):
-            if low > self.weather['hourly'][h]['temp']:
-                low = self.weather['hourly'][h]['temp']
-                lowTime = self.weather['hourly'][h]['dt']
-        lowLocalTime = datetime.fromtimestamp(lowTime)
-
-        return float(low), lowLocalTime
+        low, _ = self.lowest_highest()
+        return low[0], low[1]
 
     def highest(self):
-        if self.weather == '':
-            self.fetch()
-        if self.weather == '':
-            return None, None
-
-        high = -float('inf')
-        highTime = None
-        for h in range(0, 24):
-            if high < self.weather['hourly'][h]['temp']:
-                high = self.weather['hourly'][h]['temp']
-                highTime = self.weather['hourly'][h]['dt']
-        highLocalTime = datetime.fromtimestamp(highTime)
-
-        return float(high), highLocalTime
+        _, high = self.lowest_highest()
+        return high[0], high[1]
 
     def summary(self, md_type: str = ""):
         if self.weather == '':
@@ -171,17 +173,31 @@ class Weather:
 
 if __name__ == '__main__':
     w = Weather()
-    w.fetch()
+    if w.fetch() is False:
+        print("Can't get weather information.")
+        exit(1)
     text = w.summary()
     print(text)
-
+    
     high, highTime = w.highest()
-    print('highest temperature: ',
-          f'{high}°C', highTime.strftime("at %I:%M %p on %A"))
+    if high and highTime:
+        print("high: ", high)
+        print("highTime: ", highTime)
+        print('highest temperature: ',
+              f'{high}°C', highTime.strftime("at %I:%M %p on %A"))
+    else:
+        print("No highest data")
+        exit(0)
 
     low, lowTime = w.lowest()
-    print('lowest temperature: ',
-          f'{low}°C', lowTime.strftime("at %I:%M %p on %A"))
+    if low and lowTime:
+        print("low: ", low)
+        print("lowTime: ", lowTime)
+        print('lowest temperature: ',
+              f'{low}°C', lowTime.strftime("at %I:%M %p on %A"))
+    else:
+        print("No lowest data")
+        exit(0)
 
     if high > 35:
         print("so hot!!")

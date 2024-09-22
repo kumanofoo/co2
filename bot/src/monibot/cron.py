@@ -1,5 +1,6 @@
 import threading
 import queue
+import time
 import logging
 log = logging.getLogger(__name__)
 
@@ -28,12 +29,18 @@ class Cron(threading.Thread):
         self.webhook = webhook
         self.event = threading.Event()
         super(Cron, self).__init__()
+        self.name = func.__name__
 
     def run(self):
         log.debug(f"start thread({self.func.__name__})")
         while True:
             log.debug(f"call '{self.func.__name__}'")
-            ret = self.func(*self.args, **self.kwargs)
+            try:
+                ret = self.func(*self.args, **self.kwargs)
+            except Exception as e:
+                log.warning(f"failed to execute function: {e}")
+                time.sleep(60)
+                continue
             if self.queue and ret:
                 log.debug(self.queue)
                 self.queue.put_nowait(ret)

@@ -132,7 +132,9 @@ class OutsideTemperature():
                     mes += "\n"
                 mes += "You become butter...\n"
                 mes += "A low of %.1f%s %s" % (low, self.degree, low_t_str)
-
+        else:
+            mes = "Umm, The network seems to be having issues."
+             
         log.debug("message: %s" % (mes))
         return mes
 

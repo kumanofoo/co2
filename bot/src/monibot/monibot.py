@@ -37,7 +37,11 @@ log = logging.getLogger('monibot')
 
 # slack token and app settings
 if os.environ.get("SLACK_BOT_TOKEN"):
-    app = App(token=os.environ["SLACK_BOT_TOKEN"])
+    try:
+        app = App(token=os.environ["SLACK_BOT_TOKEN"])
+    except Exception as e:
+        log.critical(f"failed to connect to Slack: {e}")
+        exit(1)
 else:
     log.critical("Environment value 'SLACK_BOT_TOTKEN' is not difined")
     exit(1)
@@ -421,7 +425,7 @@ try:
     c = Cron(
         forecast.check_temperature,
         interval_sec=forecast.interval_hours*60*60,
-        webhook=webhook
+        queue=q
     )
     crons.append(c)
 except MonitorError as e:
@@ -452,7 +456,7 @@ try:
         c = Cron(
             check_servers,
             interval_sec=servers.ping_interval_sec,
-            webhook=webhook
+            queue=q
         )
         crons.append(c)
 except MonitorError as e:
@@ -470,21 +474,38 @@ except GetIPError as e:
 
 def main():
     signal.signal(signal.SIGTERM, signal_handler)
+    try:
+        handler.connect()
+    except Exception as e:
+        log.error(f'failed to connect Slack: {e}')
+        exit(1)
+
     for c in crons:
         c.start()
     log.info('running.')
-    try:
-        handler.connect()
-        while not finish_monibot:
-            mes = q.get()
-            log.debug(f'dequeue message: {mes}')
+
+    retry_interval_sec = 60
+    while not finish_monibot:
+        mes = q.get()
+        log.debug(f"dequeue message: {mes}")
+        if mes == "":
+            log.warning(f"message was empty")
+            continue
+        try:
             webhook.send(text=mes)
-    finally:
-        handler.close()
-        for c in crons:
-            c.abort()
-            c.join()
-        log.info('stopped.')
+            retry_interval_sec = 60
+        except Exception as e:
+            log.warning(f"caught an exception in webhook.send: {e}")
+            log.warning(f"retry to send after {retry_interval_sec} seconds")
+            q.put(mes)
+            time.sleep(retry_interval_sec)
+            retry_interval_sec *= 2
+
+    for c in crons:
+        c.abort()
+        c.join()
+    handler.close()
+    log.info('stopped.')
 
 
 if __name__ == "__main__":
