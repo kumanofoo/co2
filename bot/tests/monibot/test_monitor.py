@@ -2,47 +2,48 @@
 
 import os
 import datetime as dt
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from tempfile import TemporaryDirectory
 from pathlib import Path
 import pytest
 import monibot.monitor as moni
 
-testdir = 'tests/monibot'
+testdir = "tests/monibot"
 
 
-@pytest.mark.parametrize(('lowest', 'highest', 'days', 'expected'), [
-    (20, 30, 0, '===='),
-    (20, 35, 0, '===='),
-    (-0.5, 30, 0, '===='),
-    (-10, 30, 0, '===='),
-    (20, 30, 1, '===='),
-    (20, 35, 1, '====It will be too hot!!'),
-    (31, 20, 1, '====You become butter...'),
-    (-4, -0.5, 1, '====It will be too cold!!'),
-    (-10, 30, 1, '====keep your pipes!!'),
-])
+@pytest.mark.parametrize(
+    ("lowest", "highest", "days", "expected"),
+    [
+        (20, 30, 0, "===="),
+        (20, 35, 0, "===="),
+        (-0.5, 30, 0, "===="),
+        (-10, 30, 0, "===="),
+        (20, 30, 1, "===="),
+        (20, 35, 1, "====It will be too hot!!"),
+        (31, 20, 1, "====You become butter..."),
+        (-4, -0.5, 1, "====It will be too cold!!"),
+        (-10, 30, 1, "====keep your pipes!!"),
+    ],
+)
 def test_outsidetemperature(mocker, lowest, highest, days, expected):
-    os.environ['MONITOR_CONFIG'] = f'{testdir}/monitor-test.conf'
+    os.environ["MONITOR_CONFIG"] = f"{testdir}/monitor-test.conf"
 
-    mocker.patch('monibot.monitor.Weather.__init__', return_value=None)
-    mocker.patch('monibot.monitor.Weather.fetch')
+    mocker.patch("monibot.monitor.Weather.__init__", return_value=None)
+    mocker.patch("monibot.monitor.Weather.fetch")
 
-    date = datetime.today() + dt.timedelta(days=days)
-    mocker.patch('monibot.monitor.Weather.lowest',
-                 return_value=(lowest, date))
-    mocker.patch('monibot.monitor.Weather.highest',
-                 return_value=(highest, date))
+    date = datetime.now(timezone.utc) + dt.timedelta(days=days)
+    mocker.patch("monibot.monitor.Weather.lowest", return_value=(lowest, date))
+    mocker.patch("monibot.monitor.Weather.highest", return_value=(highest, date))
 
     outside = moni.OutsideTemperature()
-    mes = '===='
+    mes = "===="
     mes += outside.check_temperature()
     assert mes.startswith(expected)
 
     mes = outside.fetch_temperature()
     assert mes is not None
-    assert mes.startswith('A low of')
+    assert mes.startswith("A low of")
 
 
 def test_read_config():
@@ -185,26 +186,20 @@ class TestServer:
             {
                 "localhost_icmp": {
                     "alive": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    "expected": [True, None, None, None, None,
-                                 None, None, None, None, None, None],
+                    "expected": [True, None, None, None, None, None, None, None, None, None, None],
                 },
                 "localhost_web": {
                     "alive": [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-                    "expected": [True, "good", None, "noisy", None,
-                                 None, None, None, None, None, None],
+                    "expected": [True, "good", None, "noisy", None, None, None, None, None, None, None],
                 },
                 "localhost_dns": {
                     "alive": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    "expected": ["good", "noisy", None, None, None,
-                                 None, None, None, None, False, None],
+                    "expected": ["good", "noisy", None, None, None, None, None, None, None, False, None],
                 },
             },
-            {
-                0.9: "good",
-                0.0: "noisy"
-            },
+            {0.9: "good", 0.0: "noisy"},
             None,
-            '''{
+            """{
                 "monitor": {
                     "servers": {
                         "ping_interval_sec": 60,
@@ -222,41 +217,26 @@ class TestServer:
                         }
                     }
                 }
-            }''',
+            }""",
         ),
         "noisy": (
             {
                 "localhost_icmp": {
-                    "alive": [1, 0, 1, 0, 1,
-                              1, 1, 1, 1, 1,
-                              1, 1, 1, 1, 1],
-                    "expected": [True, "good", None, "noisy", None,
-                                 None, None, None, None, None,
-                                 None, "good", None, True, None],
+                    "alive": [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    "expected": [True, "good", None, "noisy", None, None, None, None, None, None, None, "good", None, True, None],
                 },
                 "localhost_web": {
-                    "alive": [0, 0, 0, 0, 0,
-                              0, 0, 0, 0, 0,
-                              1, 1, 1, 1, 1],
-                    "expected": ["good", "noisy", None, None, None,
-                                 None, None, None, None, False,
-                                 "noisy", None, None, None, None],
+                    "alive": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+                    "expected": ["good", "noisy", None, None, None, None, None, None, None, False, "noisy", None, None, None, None],
                 },
                 "localhost_dns": {
-                    "alive": [1, 0, 1, 0, 1,
-                              1, 1, 1, 1, 1,
-                              1, 1, 1, 0, 1],
-                    "expected": [True, "good", None, "noisy", None,
-                                 None, None, None, None, None,
-                                 None, "good", None, None, None],
-                }
+                    "alive": [1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                    "expected": [True, "good", None, "noisy", None, None, None, None, None, None, None, "good", None, None, None],
+                },
             },
-            {
-                0.9: "good",
-                0.0: "noisy"
-            },
+            {0.9: "good", 0.0: "noisy"},
             (False, True),
-            '''{
+            """{
                 "monitor": {
                     "servers": {
                         "ping_interval_sec": 60,
@@ -274,35 +254,17 @@ class TestServer:
                         }
                     }
                 }
-            }''',
+            }""",
         ),
         "bad": (
             {
-                "localhost_icmp": {
-                    "alive": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    "expected": ["up", "good", "noisy",
-                                 None, None, None, None, None, None, None,
-                                 "down"]
-                },
-                "localhost_web": {
-                    "alive": [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    "expected": ["good", None, None, None, None,
-                                 None, None, None, None, None,
-                                 "up"]
-                },
-                "localhost_dns": {
-                    "alive": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                    "expected": ["up", "good", "noisy", None, None,
-                                 None, None, None, None, None,
-                                 None]
-                },
+                "localhost_icmp": {"alive": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "expected": ["up", "good", "noisy", None, None, None, None, None, None, None, "down"]},
+                "localhost_web": {"alive": [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], "expected": ["good", None, None, None, None, None, None, None, None, None, "up"]},
+                "localhost_dns": {"alive": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], "expected": ["up", "good", "noisy", None, None, None, None, None, None, None, None]},
             },
-            {
-                0.9: "good",
-                0.0: "noisy"
-            },
+            {0.9: "good", 0.0: "noisy"},
             ("down", "up"),
-            '''{
+            """{
                 "monitor": {
                     "servers": {
                         "ping_interval_sec": 60,
@@ -321,39 +283,21 @@ class TestServer:
                         }
                     }
                 }
-            }''',
+            }""",
         ),
     }
 
-    @pytest.mark.parametrize(
-        "targets, classes, class10, config",
-        list(delay_and_return.values()),
-        ids=list(delay_and_return.keys()))
+    @pytest.mark.parametrize("targets, classes, class10, config", list(delay_and_return.values()), ids=list(delay_and_return.keys()))
     def test_is_changed(self, mocker, targets, classes, class10, config):
         for t in targets:
             assert len(targets[t]["alive"]) == len(targets[t]["expected"])
 
-        return_values_icmp = [
-            [(False, "ICMP mocker"), (True, "ICMP mocker")][x]
-            for x in targets["localhost_icmp"]["alive"]
-        ]
-        mocker.patch(
-            "monibot.ping.ICMP.is_alive",
-            side_effect=return_values_icmp)
-        return_values_web = [
-            [(False, "Web mocker"), (True, "Web mocker")][x]
-            for x in targets["localhost_web"]["alive"]
-        ]
-        mocker.patch(
-            "monibot.ping.Web.is_alive",
-            side_effect=return_values_web)
-        return_values_dns = [
-            [(False, "DNS mocker"), (True, "DNS mocker")][x]
-            for x in targets["localhost_dns"]["alive"]
-        ]
-        mocker.patch(
-            "monibot.ping.DNS.is_alive",
-            side_effect=return_values_dns)
+        return_values_icmp = [[(False, "ICMP mocker"), (True, "ICMP mocker")][x] for x in targets["localhost_icmp"]["alive"]]
+        mocker.patch("monibot.ping.ICMP.is_alive", side_effect=return_values_icmp)
+        return_values_web = [[(False, "Web mocker"), (True, "Web mocker")][x] for x in targets["localhost_web"]["alive"]]
+        mocker.patch("monibot.ping.Web.is_alive", side_effect=return_values_web)
+        return_values_dns = [[(False, "DNS mocker"), (True, "DNS mocker")][x] for x in targets["localhost_dns"]["alive"]]
+        mocker.patch("monibot.ping.DNS.is_alive", side_effect=return_values_dns)
 
         with TemporaryDirectory() as dname:
             config_path = Path(dname) / "test_read_config.json"
@@ -364,10 +308,7 @@ class TestServer:
                 if class10 is None:
                     changes = servers.is_changed(classes=classes)
                 else:
-                    changes = servers.is_changed(
-                        classes=classes,
-                        class1=class10[1],
-                        class0=class10[0])
+                    changes = servers.is_changed(classes=classes, class1=class10[1], class0=class10[0])
 
                 for target in targets:
                     exp = targets[target]["expected"][i]
@@ -375,5 +316,5 @@ class TestServer:
                     assert state == exp, f"{i}: {target}\n{changes}"
 
 
-if __name__ == '__main__':
-    pytest.main(['-v', __file__])
+if __name__ == "__main__":
+    pytest.main(["-v", __file__])

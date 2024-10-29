@@ -1,10 +1,11 @@
 from typing import Any, Dict
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import json
-from monibot.openweathermap import Weather, WeatherError
+from monibot.jma import Weather, WeatherError
 from monibot.ping import ICMP, Web, DNS
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -30,55 +31,47 @@ def get_value(json, key, valuetype) -> Any:
 def read_config(key: str) -> dict:
     monitor_config = os.environ.get("MONITOR_CONFIG")
     if not monitor_config:
-        raise MonitorError(
-            'no environment variable MONITOR_CONFIG')
+        raise MonitorError("no environment variable MONITOR_CONFIG")
 
     try:
-        f = open(monitor_config, encoding='utf-8')
+        f = open(monitor_config, encoding="utf-8")
     except (IOError, FileNotFoundError):
-        raise MonitorError(
-            f"cannot open configuration file '{monitor_config}'")
+        raise MonitorError(f"cannot open configuration file '{monitor_config}'")
 
     conf = json.load(f)
     monitor_configuration = conf.get("monitor")
     if not monitor_configuration:
-        raise MonitorError(
-            f"'monitor' key not found in {monitor_config}")
+        raise MonitorError(f"'monitor' key not found in {monitor_config}")
 
     key_configuration = monitor_configuration.get(key)
     if not key_configuration:
-        raise MonitorError(
-            f"'{key}' key not found in {monitor_config}:'[monitor]'")
+        raise MonitorError(f"'{key}' key not found in {monitor_config}:'[monitor]'")
 
     return key_configuration
 
 
-class OutsideTemperature():
+class OutsideTemperature:
     def __init__(self):
         self.configuration = read_config("temperature")
-        key = 'outside_hot_alert_threshold'
-        self.outside_hot_alert_threshold = get_value(self.configuration,
-                                                     key, float)
-        log.debug('%s: %f degrees Celsius' %
-                  (key, self.outside_hot_alert_threshold))
+        key = "outside_hot_alert_threshold"
+        self.outside_hot_alert_threshold = get_value(self.configuration, key, float)
+        log.debug("%s: %f degrees Celsius" % (key, self.outside_hot_alert_threshold))
 
-        key = 'pipe_alert_threshold'
+        key = "pipe_alert_threshold"
         self.pipe_alert_threshold = get_value(self.configuration, key, float)
-        log.debug('%s: %f degrees Celsius' %
-                  (key, self.pipe_alert_threshold))
+        log.debug("%s: %f degrees Celsius" % (key, self.pipe_alert_threshold))
 
-        key = 'forecast_interval_hours'
+        key = "forecast_interval_hours"
         self.interval_hours = get_value(self.configuration, key, int)
-        log.debug('%s: %d hours' %
-                  (key, self.interval_hours))
+        log.debug("%s: %d hours" % (key, self.interval_hours))
 
         try:
             self.wt = Weather()
         except WeatherError as e:
             raise MonitorError(e)
 
-        self.datetime_format = 'at %I:%M %p on %A'
-        self.degree = '°C'
+        self.datetime_format = "at %I:%M %p on %A"
+        self.degree = "°C"
 
     def fetch_summary(self, md_type="slack"):
         self.wt.fetch()
@@ -100,7 +93,7 @@ class OutsideTemperature():
     def check_temperature(self):
         min = self.pipe_alert_threshold
         max = self.outside_hot_alert_threshold
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
 
         log.debug("min=%d, max=%d" % (min, max))
         self.wt.fetch()
@@ -134,7 +127,7 @@ class OutsideTemperature():
                 mes += "A low of %.1f%s %s" % (low, self.degree, low_t_str)
         else:
             mes = "Umm, The network seems to be having issues."
-             
+
         log.debug("message: %s" % (mes))
         return mes
 
@@ -157,7 +150,7 @@ class Server:
         self.servers = []
         for s in servers:
             sv = Server.ping[servers[s]["type"]](s)
-            sv.monitor_latest = [1]*self.previous_data_points
+            sv.monitor_latest = [1] * self.previous_data_points
             sv.monitor_previous_state = None
             sv.same_state_times = 0
             self.servers.append(sv)
@@ -172,10 +165,10 @@ class Server:
         return status
 
     def is_changed(
-            self,
-            classes: Dict[float, Any] = {},
-            class0: Any = False,
-            class1: Any = True
+        self,
+        classes: Dict[float, Any] = {},
+        class0: Any = False,
+        class1: Any = True,
     ) -> Dict[str, Any]:
         status = {}
         for s in self.servers:
@@ -186,7 +179,7 @@ class Server:
                 s.monitor_latest.append(0)
             s.monitor_latest.pop(0)
 
-            latest_alive_average = sum(s.monitor_latest)/len(s.monitor_latest)
+            latest_alive_average = sum(s.monitor_latest) / len(s.monitor_latest)
 
             state = None
             if latest_alive_average == 1.0:

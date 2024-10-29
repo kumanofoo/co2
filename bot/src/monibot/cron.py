@@ -38,7 +38,7 @@ class Cron(threading.Thread):
             try:
                 ret = self.func(*self.args, **self.kwargs)
             except Exception as e:
-                log.warning(f"failed to execute function: {e}")
+                log.warning(f"failed to execute {self.func.__name__}(): {e}")
                 time.sleep(60)
                 continue
             if self.queue and ret:
