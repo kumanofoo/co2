@@ -100,7 +100,7 @@ class OutsideTemperature:
         low, low_t = self.wt.lowest()
         high, high_t = self.wt.highest()
         mes = ""
-        if low and low_t and high and high_t:
+        if all(x is not None for x in (low, low_t, high, high_t)):
             low_t_str = low_t.strftime(self.datetime_format)
             high_t_str = high_t.strftime(self.datetime_format)
             log.debug("low=%d, low_t=%s" % (low, low_t_str))

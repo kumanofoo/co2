@@ -5,8 +5,7 @@ def test_icmp():
     parameters = [
         ("localhost", True, "min/avg/max/"),
         ("192.0.2.1", False, "192.0.2.1: unreachable"),
-        ("example.invalid", False,
-         "example.invalid: failure in name resolution"),
+        ("example.invalid", False, "example.invalid: failure in name resolution"),
     ]
 
     for host, expected_alive, expected_res in parameters:
@@ -23,9 +22,8 @@ def test_dns():
     assert res == "Request Timeout", f"{res}"
 
     parameters = [
-        ("www.example.com", True, '93.184.215.14'),
-        ("www.example.invalid", False,
-         "Hostname does not exist"),
+        ("www.example.com", True, "23.204.139.205"),
+        ("www.example.invalid", False, "Hostname does not exist"),
         ("xyz", False, "No records"),
     ]
     for host, expected_alive, expected_res in parameters:
@@ -37,9 +35,8 @@ def test_dns():
 
 def test_web():
     parameters = [
-        ("http://www.example.com", True, '200'),
-        ("http://www.example.invalid", False,
-         "Failed to establish a new connection"),
+        ("http://www.example.com", True, "200"),
+        ("http://www.example.invalid", False, "Failed to establish a new connection"),
         ("https://httpstat.us/200?sleep=10000", False, "Timeout"),
     ]
     for url, expected_alive, expected_res in parameters:
